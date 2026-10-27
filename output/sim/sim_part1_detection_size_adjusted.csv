@@ -1,0 +1,14 @@
+"id","label","run","scenario","misspec","cens_strength","outcome_strength","n_rep","nominal_rrb","nominal_cb","adj_rrb","adj_rrb_se","adj_cb","adj_cb_se","diff_rrb_minus_cb","diff_se"
+"P1-01","Correct specification, n = 2000","largerep","correct_1000","none","none","none",1000,0.023,0.05,0.05,0.00689202437604511,0.0500000000000001,0.00689202437604512,0,0.0090599162293082
+"P1-02","Omitted L_k, weak / none","variants","omit_L1_cw_on","omit_L","weak","none",200,0.45,0.325,0.55,0.0351781181986757,0.345,0.0336136133136561,0.205,0.0461031724782884
+"P1-03","Omitted L_k, weak / strong","variants","omit_L1_cw_os","omit_L","weak","strong",200,0.395,0.37,0.49,0.0353482672842673,0.385,0.0344074846508721,0.105,0.0482859468511966
+"P1-04","Omitted L_k, strong / none","variants","omit_L1_cs_on","omit_L","strong","none",200,0.98,0.96,0.985,0.00859505671883555,0.96,0.013856406460551,0.025,0.0110674042659483
+"P1-05","Omitted L_k, strong / strong","variants","omit_L1_cs_os","omit_L","strong","strong",200,0.975,0.95,0.995,0.004987484335815,0.95,0.0154110350074225,0.0450000000000001,0.0163158214672371
+"P1-06","Omitted L_k^2, weak / none","variants","omit_Lsq_cw_on_g45","omit_Lsq","weak","none",200,0.81,0.985,0.845,0.0255905255905384,0.99,0.00703562363973515,-0.145,0.0268978151958772
+"P1-07","Omitted L_k^2, weak / strong","main","omit_Lsq_cw_os","omit_Lsq","weak","strong",200,0.805,0.975,0.835,0.0262464283284412,0.975,0.0110397010829098,-0.14,0.0274914331105594
+"P1-08","Omitted L_k^2, strong / none","variants","omit_Lsq_cs_on_g45","omit_Lsq","strong","none",200,1,1,1,0,1,0,0,0
+"P1-09","Omitted L_k^2, strong / strong","main","omit_Lsq_cs_os","omit_Lsq","strong","strong",200,1,1,1,0,1,0,0,0
+"P1-10","Omitted L_{k-1}, weak / none","main","omit_lag_cw_on","omit_lag","weak","none",200,0.35,0.295,0.395,0.0345669639974355,0.3,0.0324037034920393,0.095,0.0451671935909729
+"P1-11","Omitted L_{k-1}, weak / strong","main","omit_lag_cw_os","omit_lag","weak","strong",200,0.47,0.29,0.53,0.0352916420700426,0.305,0.0325557214633619,0.225,0.0461794076233358
+"P1-12","Omitted L_{k-1}, strong / none","main","omit_lag_cs_on","omit_lag","strong","none",200,0.67,0.63,0.755,0.0304117575947198,0.645,0.0338360015368246,0.11,0.0386908894266222
+"P1-13","Omitted L_{k-1}, strong / strong","main","omit_lag_cs_os","omit_lag","strong","strong",200,0.74,0.62,0.795,0.0285460154837764,0.625,0.0342326598440729,0.17,0.0437615742048252

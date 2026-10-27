@@ -1,0 +1,2 @@
+"RUN","N_REPS","N_BOOT","N_NULL_DRAWS","N_MC","N_CORES","n_tasks","n_failed","runtime_min"
+"manycov","many_cov=200;many_cov_n300=200;rare_censoring=200;extreme_weights=200;many_cov_omit_X2=200;many_cov_omit_X2_rho0=200","many_cov=100;many_cov_n300=100;rare_censoring=100;extreme_weights=100;many_cov_omit_X2=100;many_cov_omit_X2_rho0=100",500,5e+05,40,1200,0,23.75

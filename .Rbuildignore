@@ -1,0 +1,8 @@
+^.*\.Rproj$
+^\.Rproj\.user$
+^\.gitignore$
+^\.github$
+^LICENSE\.md$
+^analysis$
+^output$
+^data-raw$

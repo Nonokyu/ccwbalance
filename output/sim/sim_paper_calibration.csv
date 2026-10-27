@@ -1,0 +1,431 @@
+"id","part","label","run","scenario","diagnostic","feature","n_rep","exceed_rate","ci_lower","ci_upper"
+"P1-01",1,"Correct specification, n = 2000","largerep","correct_1000","RRB","all",1000,0.023,0.0146345823251768,0.0343123376128543
+"P1-01",1,"Correct specification, n = 2000","largerep","correct_1000","RRB","X",1000,0.046,0.0338714985476779,0.0608835527137427
+"P1-01",1,"Correct specification, n = 2000","largerep","correct_1000","RRB","L",1000,0.034,0.0236586481075967,0.0471894386157075
+"P1-01",1,"Correct specification, n = 2000","largerep","correct_1000","RRB","L_sq",1000,0.009,0.00412339566034247,0.0170157830698946
+"P1-01",1,"Correct specification, n = 2000","largerep","correct_1000","RRB","L_lagprod",1000,0.017,0.00993351259271654,0.0270794968648513
+"P1-01",1,"Correct specification, n = 2000","largerep","correct_1000","RRB","L_diff",1000,0.051,0.0382052367746862,0.0665134615949348
+"P1-01",1,"Correct specification, n = 2000","largerep","correct_1000","RRB","L_cummean",1000,0.034,0.0236586481075967,0.0471894386157075
+"P1-01",1,"Correct specification, n = 2000","largerep","correct_1000","RRB","L_gt0",1000,0.05,0.0373353976046618,0.0653904879154936
+"P1-01",1,"Correct specification, n = 2000","largerep","correct_1000","RRB","L_x_X",1000,0.012,0.00621552555959524,0.0208676795910364
+"P1-01",1,"Correct specification, n = 2000","largerep","correct_1000","CB","all",1000,0.05,0.0373353976046618,0.0653904879154936
+"P1-01",1,"Correct specification, n = 2000","largerep","correct_1000","CB","X",1000,0.052,0.0390765349439805,0.0676350140505073
+"P1-01",1,"Correct specification, n = 2000","largerep","correct_1000","CB","L",1000,0.041,0.0295801685340361,0.0552124593152993
+"P1-01",1,"Correct specification, n = 2000","largerep","correct_1000","CB","L_sq",1000,0.032,0.0219888496056424,0.0448759028350093
+"P1-01",1,"Correct specification, n = 2000","largerep","correct_1000","CB","L_lagprod",1000,0.023,0.0146345823251768,0.0343123376128543
+"P1-01",1,"Correct specification, n = 2000","largerep","correct_1000","CB","L_diff",1000,0.05,0.0373353976046618,0.0653904879154936
+"P1-01",1,"Correct specification, n = 2000","largerep","correct_1000","CB","L_cummean",1000,0.063,0.0487469275565806,0.0798880418733545
+"P1-01",1,"Correct specification, n = 2000","largerep","correct_1000","CB","L_gt0",1000,0.053,0.0399492523600194,0.0687551832899632
+"P1-01",1,"Correct specification, n = 2000","largerep","correct_1000","CB","L_x_X",1000,0.037,0.0261827088437373,0.0506411230599249
+"P1-02",1,"Omitted L_k, weak / none","variants","omit_L1_cw_on","RRB","all",200,0.45,0.379753589978885,0.521750689006462
+"P1-02",1,"Omitted L_k, weak / none","variants","omit_L1_cw_on","RRB","X",200,0.065,0.035060708656979,0.108587236503815
+"P1-02",1,"Omitted L_k, weak / none","variants","omit_L1_cw_on","RRB","L",200,0.81,0.748668481376256,0.86189687462716
+"P1-02",1,"Omitted L_k, weak / none","variants","omit_L1_cw_on","RRB","L_sq",200,0.05,0.0242341654721085,0.0900275377013514
+"P1-02",1,"Omitted L_k, weak / none","variants","omit_L1_cw_on","RRB","L_lagprod",200,0.055,0.0277722545520065,0.0962776444339128
+"P1-02",1,"Omitted L_k, weak / none","variants","omit_L1_cw_on","RRB","L_diff",200,0.36,0.293504720891167,0.430713946018717
+"P1-02",1,"Omitted L_k, weak / none","variants","omit_L1_cw_on","RRB","L_cummean",200,0.535,0.463299857788321,0.605647264738543
+"P1-02",1,"Omitted L_k, weak / none","variants","omit_L1_cw_on","RRB","L_gt0",200,0.63,0.559053515215259,0.697030175728763
+"P1-02",1,"Omitted L_k, weak / none","variants","omit_L1_cw_on","RRB","L_x_X",200,0.045,0.0207804222270043,0.083702688075854
+"P1-02",1,"Omitted L_k, weak / none","variants","omit_L1_cw_on","CB","all",200,0.325,0.260625514753615,0.394653706304808
+"P1-02",1,"Omitted L_k, weak / none","variants","omit_L1_cw_on","CB","X",200,0.04,0.0174248089944806,0.077291968226016
+"P1-02",1,"Omitted L_k, weak / none","variants","omit_L1_cw_on","CB","L",200,0.885,0.832453055517746,0.925686626307703
+"P1-02",1,"Omitted L_k, weak / none","variants","omit_L1_cw_on","CB","L_sq",200,0.05,0.0242341654721085,0.0900275377013514
+"P1-02",1,"Omitted L_k, weak / none","variants","omit_L1_cw_on","CB","L_lagprod",200,0.05,0.0242341654721085,0.0900275377013514
+"P1-02",1,"Omitted L_k, weak / none","variants","omit_L1_cw_on","CB","L_diff",200,0.385,0.317224525362867,0.456238692783145
+"P1-02",1,"Omitted L_k, weak / none","variants","omit_L1_cw_on","CB","L_cummean",200,0.325,0.260625514753615,0.394653706304808
+"P1-02",1,"Omitted L_k, weak / none","variants","omit_L1_cw_on","CB","L_gt0",200,0.715,0.64705730024846,0.776445601989316
+"P1-02",1,"Omitted L_k, weak / none","variants","omit_L1_cw_on","CB","L_x_X",200,0.05,0.0242341654721085,0.0900275377013514
+"P1-03",1,"Omitted L_k, weak / strong","variants","omit_L1_cw_os","RRB","all",200,0.395,0.326764991805063,0.466396428026518
+"P1-03",1,"Omitted L_k, weak / strong","variants","omit_L1_cw_os","RRB","X",200,0.035,0.0141855258984192,0.0707809983509773
+"P1-03",1,"Omitted L_k, weak / strong","variants","omit_L1_cw_os","RRB","L",200,0.78,0.716138752686492,0.835363938688216
+"P1-03",1,"Omitted L_k, weak / strong","variants","omit_L1_cw_os","RRB","L_sq",200,0.04,0.0174248089944806,0.077291968226016
+"P1-03",1,"Omitted L_k, weak / strong","variants","omit_L1_cw_os","RRB","L_lagprod",200,0.03,0.0110874556722548,0.064150626705027
+"P1-03",1,"Omitted L_k, weak / strong","variants","omit_L1_cw_os","RRB","L_diff",200,0.31,0.246658037441725,0.379077040520326
+"P1-03",1,"Omitted L_k, weak / strong","variants","omit_L1_cw_os","RRB","L_cummean",200,0.545,0.473259247518988,0.615386957961083
+"P1-03",1,"Omitted L_k, weak / strong","variants","omit_L1_cw_os","RRB","L_gt0",200,0.54,0.468276101991955,0.610520569970517
+"P1-03",1,"Omitted L_k, weak / strong","variants","omit_L1_cw_os","RRB","L_x_X",200,0.06,0.0313839538934835,0.102461831308324
+"P1-03",1,"Omitted L_k, weak / strong","variants","omit_L1_cw_os","CB","all",200,0.37,0.302969824271237,0.440946484784741
+"P1-03",1,"Omitted L_k, weak / strong","variants","omit_L1_cw_os","CB","X",200,0.075,0.0425828037370926,0.120684225399661
+"P1-03",1,"Omitted L_k, weak / strong","variants","omit_L1_cw_os","CB","L",200,0.87,0.815347669476587,0.913291647231425
+"P1-03",1,"Omitted L_k, weak / strong","variants","omit_L1_cw_os","CB","L_sq",200,0.015,0.00310410762155351,0.0432082819177126
+"P1-03",1,"Omitted L_k, weak / strong","variants","omit_L1_cw_os","CB","L_lagprod",200,0.015,0.00310410762155351,0.0432082819177126
+"P1-03",1,"Omitted L_k, weak / strong","variants","omit_L1_cw_os","CB","L_diff",200,0.355,0.288783777713584,0.42558616692658
+"P1-03",1,"Omitted L_k, weak / strong","variants","omit_L1_cw_os","CB","L_cummean",200,0.335,0.269979155157369,0.40499664134941
+"P1-03",1,"Omitted L_k, weak / strong","variants","omit_L1_cw_os","CB","L_gt0",200,0.69,0.620922959479674,0.753341962558275
+"P1-03",1,"Omitted L_k, weak / strong","variants","omit_L1_cw_os","CB","L_x_X",200,0.02,0.00547556587955645,0.0504136090898963
+"P1-04",1,"Omitted L_k, strong / none","variants","omit_L1_cs_on","RRB","all",200,0.98,0.949586390910104,0.994524434120444
+"P1-04",1,"Omitted L_k, strong / none","variants","omit_L1_cs_on","RRB","X",200,0.075,0.0425828037370926,0.120684225399661
+"P1-04",1,"Omitted L_k, strong / none","variants","omit_L1_cs_on","RRB","L",200,0.995,0.972458101542794,0.999873418972133
+"P1-04",1,"Omitted L_k, strong / none","variants","omit_L1_cs_on","RRB","L_sq",200,0.045,0.0207804222270043,0.083702688075854
+"P1-04",1,"Omitted L_k, strong / none","variants","omit_L1_cs_on","RRB","L_lagprod",200,0.035,0.0141855258984192,0.0707809983509773
+"P1-04",1,"Omitted L_k, strong / none","variants","omit_L1_cs_on","RRB","L_diff",200,0.935,0.891412763496185,0.964939291343021
+"P1-04",1,"Omitted L_k, strong / none","variants","omit_L1_cs_on","RRB","L_cummean",200,0.965,0.929219001649023,0.985814474101581
+"P1-04",1,"Omitted L_k, strong / none","variants","omit_L1_cs_on","RRB","L_gt0",200,1,0.981724659644864,1
+"P1-04",1,"Omitted L_k, strong / none","variants","omit_L1_cs_on","RRB","L_x_X",200,0.05,0.0242341654721085,0.0900275377013514
+"P1-04",1,"Omitted L_k, strong / none","variants","omit_L1_cs_on","CB","all",200,0.96,0.922708031773984,0.982575191005519
+"P1-04",1,"Omitted L_k, strong / none","variants","omit_L1_cs_on","CB","X",200,0.14,0.0950875173590198,0.195945261119614
+"P1-04",1,"Omitted L_k, strong / none","variants","omit_L1_cs_on","CB","L",200,0.995,0.972458101542794,0.999873418972133
+"P1-04",1,"Omitted L_k, strong / none","variants","omit_L1_cs_on","CB","L_sq",200,0.05,0.0242341654721085,0.0900275377013514
+"P1-04",1,"Omitted L_k, strong / none","variants","omit_L1_cs_on","CB","L_lagprod",200,0.025,0.00816616619084252,0.0573743511268459
+"P1-04",1,"Omitted L_k, strong / none","variants","omit_L1_cs_on","CB","L_diff",200,0.995,0.972458101542794,0.999873418972133
+"P1-04",1,"Omitted L_k, strong / none","variants","omit_L1_cs_on","CB","L_cummean",200,0.97,0.935849373294973,0.988912544327745
+"P1-04",1,"Omitted L_k, strong / none","variants","omit_L1_cs_on","CB","L_gt0",200,0.995,0.972458101542794,0.999873418972133
+"P1-04",1,"Omitted L_k, strong / none","variants","omit_L1_cs_on","CB","L_x_X",200,0.05,0.0242341654721085,0.0900275377013514
+"P1-05",1,"Omitted L_k, strong / strong","variants","omit_L1_cs_os","RRB","all",200,0.975,0.942625648873154,0.991833833809157
+"P1-05",1,"Omitted L_k, strong / strong","variants","omit_L1_cs_os","RRB","X",200,0.045,0.0207804222270043,0.083702688075854
+"P1-05",1,"Omitted L_k, strong / strong","variants","omit_L1_cs_os","RRB","L",200,0.995,0.972458101542794,0.999873418972133
+"P1-05",1,"Omitted L_k, strong / strong","variants","omit_L1_cs_os","RRB","L_sq",200,0.01,0.00121334901373603,0.0356546683972397
+"P1-05",1,"Omitted L_k, strong / strong","variants","omit_L1_cs_os","RRB","L_lagprod",200,0.03,0.0110874556722548,0.064150626705027
+"P1-05",1,"Omitted L_k, strong / strong","variants","omit_L1_cs_os","RRB","L_diff",200,0.925,0.879315774600339,0.957417196262907
+"P1-05",1,"Omitted L_k, strong / strong","variants","omit_L1_cs_os","RRB","L_cummean",200,0.97,0.935849373294973,0.988912544327745
+"P1-05",1,"Omitted L_k, strong / strong","variants","omit_L1_cs_os","RRB","L_gt0",200,0.995,0.972458101542794,0.999873418972133
+"P1-05",1,"Omitted L_k, strong / strong","variants","omit_L1_cs_os","RRB","L_x_X",200,0.105,0.0661812270287118,0.156018705547503
+"P1-05",1,"Omitted L_k, strong / strong","variants","omit_L1_cs_os","CB","all",200,0.95,0.909972462298649,0.975765834527891
+"P1-05",1,"Omitted L_k, strong / strong","variants","omit_L1_cs_os","CB","X",200,0.125,0.0825523418288169,0.178973750078799
+"P1-05",1,"Omitted L_k, strong / strong","variants","omit_L1_cs_os","CB","L",200,1,0.981724659644864,1
+"P1-05",1,"Omitted L_k, strong / strong","variants","omit_L1_cs_os","CB","L_sq",200,0.035,0.0141855258984192,0.0707809983509773
+"P1-05",1,"Omitted L_k, strong / strong","variants","omit_L1_cs_os","CB","L_lagprod",200,0.01,0.00121334901373603,0.0356546683972397
+"P1-05",1,"Omitted L_k, strong / strong","variants","omit_L1_cs_os","CB","L_diff",200,1,0.981724659644864,1
+"P1-05",1,"Omitted L_k, strong / strong","variants","omit_L1_cs_os","CB","L_cummean",200,0.995,0.972458101542794,0.999873418972133
+"P1-05",1,"Omitted L_k, strong / strong","variants","omit_L1_cs_os","CB","L_gt0",200,1,0.981724659644864,1
+"P1-05",1,"Omitted L_k, strong / strong","variants","omit_L1_cs_os","CB","L_x_X",200,0.015,0.00310410762155351,0.0432082819177126
+"P1-06",1,"Omitted L_k^2, weak / none","variants","omit_Lsq_cw_on_g45","RRB","all",200,0.81,0.748668481376256,0.86189687462716
+"P1-06",1,"Omitted L_k^2, weak / none","variants","omit_Lsq_cw_on_g45","RRB","X",200,0.555,0.483246311192574,0.62509890528149
+"P1-06",1,"Omitted L_k^2, weak / none","variants","omit_Lsq_cw_on_g45","RRB","L",200,0.895,0.843981294452497,0.933818772971288
+"P1-06",1,"Omitted L_k^2, weak / none","variants","omit_Lsq_cw_on_g45","RRB","L_sq",200,0.865,0.809690827316602,0.909112898245102
+"P1-06",1,"Omitted L_k^2, weak / none","variants","omit_Lsq_cw_on_g45","RRB","L_lagprod",200,0.725,0.65757458137625,0.785622584756905
+"P1-06",1,"Omitted L_k^2, weak / none","variants","omit_Lsq_cw_on_g45","RRB","L_diff",200,0.295,0.232768784223124,0.36342313331791
+"P1-06",1,"Omitted L_k^2, weak / none","variants","omit_Lsq_cw_on_g45","RRB","L_cummean",200,0.715,0.64705730024846,0.776445601989316
+"P1-06",1,"Omitted L_k^2, weak / none","variants","omit_Lsq_cw_on_g45","RRB","L_gt0",200,0.515,0.443463635749216,0.586085170384956
+"P1-06",1,"Omitted L_k^2, weak / none","variants","omit_Lsq_cw_on_g45","RRB","L_x_X",200,0.66,0.589844060911285,0.725331724169245
+"P1-06",1,"Omitted L_k^2, weak / none","variants","omit_Lsq_cw_on_g45","CB","all",200,0.985,0.956791718082287,0.996895892378446
+"P1-06",1,"Omitted L_k^2, weak / none","variants","omit_Lsq_cw_on_g45","CB","X",200,0.39,0.32199106211524,0.461321232544998
+"P1-06",1,"Omitted L_k^2, weak / none","variants","omit_Lsq_cw_on_g45","CB","L",200,0.81,0.748668481376256,0.86189687462716
+"P1-06",1,"Omitted L_k^2, weak / none","variants","omit_Lsq_cw_on_g45","CB","L_sq",200,0.995,0.972458101542794,0.999873418972133
+"P1-06",1,"Omitted L_k^2, weak / none","variants","omit_Lsq_cw_on_g45","CB","L_lagprod",200,0.99,0.96434533160276,0.998786650986264
+"P1-06",1,"Omitted L_k^2, weak / none","variants","omit_Lsq_cw_on_g45","CB","L_diff",200,0.17,0.120695623236217,0.229371600393886
+"P1-06",1,"Omitted L_k^2, weak / none","variants","omit_Lsq_cw_on_g45","CB","L_cummean",200,0.56,0.488250269074697,0.629944420660956
+"P1-06",1,"Omitted L_k^2, weak / none","variants","omit_Lsq_cw_on_g45","CB","L_gt0",200,0.145,0.0993086225552075,0.20156149617318
+"P1-06",1,"Omitted L_k^2, weak / none","variants","omit_Lsq_cw_on_g45","CB","L_x_X",200,0.965,0.929219001649023,0.985814474101581
+"P1-07",1,"Omitted L_k^2, weak / strong","main","omit_Lsq_cw_os","RRB","all",200,0.805,0.743214312473441,0.857508125220941
+"P1-07",1,"Omitted L_k^2, weak / strong","main","omit_Lsq_cw_os","RRB","X",200,0.475,0.404120033424979,0.546631982529676
+"P1-07",1,"Omitted L_k^2, weak / strong","main","omit_Lsq_cw_os","RRB","L",200,0.875,0.8210262499212,0.917447658171183
+"P1-07",1,"Omitted L_k^2, weak / strong","main","omit_Lsq_cw_os","RRB","L_sq",200,0.865,0.809690827316602,0.909112898245102
+"P1-07",1,"Omitted L_k^2, weak / strong","main","omit_Lsq_cw_os","RRB","L_lagprod",200,0.73,0.662847409312669,0.790196662533855
+"P1-07",1,"Omitted L_k^2, weak / strong","main","omit_Lsq_cw_os","RRB","L_diff",200,0.35,0.284070670322942,0.420450622477994
+"P1-07",1,"Omitted L_k^2, weak / strong","main","omit_Lsq_cw_os","RRB","L_cummean",200,0.68,0.610530114938342,0.744038812360043
+"P1-07",1,"Omitted L_k^2, weak / strong","main","omit_Lsq_cw_os","RRB","L_gt0",200,0.46,0.389479430029483,0.531723898008045
+"P1-07",1,"Omitted L_k^2, weak / strong","main","omit_Lsq_cw_os","RRB","L_x_X",200,0.63,0.559053515215259,0.697030175728763
+"P1-07",1,"Omitted L_k^2, weak / strong","main","omit_Lsq_cw_os","CB","all",200,0.975,0.942625648873154,0.991833833809157
+"P1-07",1,"Omitted L_k^2, weak / strong","main","omit_Lsq_cw_os","CB","X",200,0.225,0.169102547129825,0.289239605968765
+"P1-07",1,"Omitted L_k^2, weak / strong","main","omit_Lsq_cw_os","CB","L",200,0.68,0.610530114938342,0.744038812360043
+"P1-07",1,"Omitted L_k^2, weak / strong","main","omit_Lsq_cw_os","CB","L_sq",200,0.985,0.956791718082287,0.996895892378446
+"P1-07",1,"Omitted L_k^2, weak / strong","main","omit_Lsq_cw_os","CB","L_lagprod",200,0.96,0.922708031773984,0.982575191005519
+"P1-07",1,"Omitted L_k^2, weak / strong","main","omit_Lsq_cw_os","CB","L_diff",200,0.215,0.160181695332336,0.278471043884057
+"P1-07",1,"Omitted L_k^2, weak / strong","main","omit_Lsq_cw_os","CB","L_cummean",200,0.365,0.298233426367012,0.435834029789997
+"P1-07",1,"Omitted L_k^2, weak / strong","main","omit_Lsq_cw_os","CB","L_gt0",200,0.11,0.0702331635292118,0.1617962155695
+"P1-07",1,"Omitted L_k^2, weak / strong","main","omit_Lsq_cw_os","CB","L_x_X",200,0.885,0.832453055517746,0.925686626307703
+"P1-08",1,"Omitted L_k^2, strong / none","variants","omit_Lsq_cs_on_g45","RRB","all",200,1,0.981724659644864,1
+"P1-08",1,"Omitted L_k^2, strong / none","variants","omit_Lsq_cs_on_g45","RRB","X",200,0.975,0.942625648873154,0.991833833809157
+"P1-08",1,"Omitted L_k^2, strong / none","variants","omit_Lsq_cs_on_g45","RRB","L",200,1,0.981724659644864,1
+"P1-08",1,"Omitted L_k^2, strong / none","variants","omit_Lsq_cs_on_g45","RRB","L_sq",200,1,0.981724659644864,1
+"P1-08",1,"Omitted L_k^2, strong / none","variants","omit_Lsq_cs_on_g45","RRB","L_lagprod",200,1,0.981724659644864,1
+"P1-08",1,"Omitted L_k^2, strong / none","variants","omit_Lsq_cs_on_g45","RRB","L_diff",200,0.81,0.748668481376256,0.86189687462716
+"P1-08",1,"Omitted L_k^2, strong / none","variants","omit_Lsq_cs_on_g45","RRB","L_cummean",200,1,0.981724659644864,1
+"P1-08",1,"Omitted L_k^2, strong / none","variants","omit_Lsq_cs_on_g45","RRB","L_gt0",200,0.89,0.8382037844305,0.929766836470788
+"P1-08",1,"Omitted L_k^2, strong / none","variants","omit_Lsq_cs_on_g45","RRB","L_x_X",200,1,0.981724659644864,1
+"P1-08",1,"Omitted L_k^2, strong / none","variants","omit_Lsq_cs_on_g45","CB","all",200,1,0.981724659644864,1
+"P1-08",1,"Omitted L_k^2, strong / none","variants","omit_Lsq_cs_on_g45","CB","X",200,0.595,0.523475024716723,0.663665169945383
+"P1-08",1,"Omitted L_k^2, strong / none","variants","omit_Lsq_cs_on_g45","CB","L",200,0.995,0.972458101542794,0.999873418972133
+"P1-08",1,"Omitted L_k^2, strong / none","variants","omit_Lsq_cs_on_g45","CB","L_sq",200,1,0.981724659644864,1
+"P1-08",1,"Omitted L_k^2, strong / none","variants","omit_Lsq_cs_on_g45","CB","L_lagprod",200,1,0.981724659644864,1
+"P1-08",1,"Omitted L_k^2, strong / none","variants","omit_Lsq_cs_on_g45","CB","L_diff",200,0.605,0.533603571973482,0.673235008194937
+"P1-08",1,"Omitted L_k^2, strong / none","variants","omit_Lsq_cs_on_g45","CB","L_cummean",200,0.875,0.8210262499212,0.917447658171183
+"P1-08",1,"Omitted L_k^2, strong / none","variants","omit_Lsq_cs_on_g45","CB","L_gt0",200,0.17,0.120695623236217,0.229371600393886
+"P1-08",1,"Omitted L_k^2, strong / none","variants","omit_Lsq_cs_on_g45","CB","L_x_X",200,1,0.981724659644864,1
+"P1-09",1,"Omitted L_k^2, strong / strong","main","omit_Lsq_cs_os","RRB","all",200,1,0.981724659644864,1
+"P1-09",1,"Omitted L_k^2, strong / strong","main","omit_Lsq_cs_os","RRB","X",200,0.955,0.916297311924146,0.979219577772996
+"P1-09",1,"Omitted L_k^2, strong / strong","main","omit_Lsq_cs_os","RRB","L",200,1,0.981724659644864,1
+"P1-09",1,"Omitted L_k^2, strong / strong","main","omit_Lsq_cs_os","RRB","L_sq",200,1,0.981724659644864,1
+"P1-09",1,"Omitted L_k^2, strong / strong","main","omit_Lsq_cs_os","RRB","L_lagprod",200,1,0.981724659644864,1
+"P1-09",1,"Omitted L_k^2, strong / strong","main","omit_Lsq_cs_os","RRB","L_diff",200,0.775,0.710760394031235,0.830897452870175
+"P1-09",1,"Omitted L_k^2, strong / strong","main","omit_Lsq_cs_os","RRB","L_cummean",200,1,0.981724659644864,1
+"P1-09",1,"Omitted L_k^2, strong / strong","main","omit_Lsq_cs_os","RRB","L_gt0",200,0.86,0.804054738880386,0.90491248264098
+"P1-09",1,"Omitted L_k^2, strong / strong","main","omit_Lsq_cs_os","RRB","L_x_X",200,0.99,0.96434533160276,0.998786650986264
+"P1-09",1,"Omitted L_k^2, strong / strong","main","omit_Lsq_cs_os","CB","all",200,1,0.981724659644864,1
+"P1-09",1,"Omitted L_k^2, strong / strong","main","omit_Lsq_cs_os","CB","X",200,0.605,0.533603571973482,0.673235008194937
+"P1-09",1,"Omitted L_k^2, strong / strong","main","omit_Lsq_cs_os","CB","L",200,0.99,0.96434533160276,0.998786650986264
+"P1-09",1,"Omitted L_k^2, strong / strong","main","omit_Lsq_cs_os","CB","L_sq",200,1,0.981724659644864,1
+"P1-09",1,"Omitted L_k^2, strong / strong","main","omit_Lsq_cs_os","CB","L_lagprod",200,1,0.981724659644864,1
+"P1-09",1,"Omitted L_k^2, strong / strong","main","omit_Lsq_cs_os","CB","L_diff",200,0.565,0.493261207812473,0.634782930830348
+"P1-09",1,"Omitted L_k^2, strong / strong","main","omit_Lsq_cs_os","CB","L_cummean",200,0.9,0.849787212132244,0.937840633745934
+"P1-09",1,"Omitted L_k^2, strong / strong","main","omit_Lsq_cs_os","CB","L_gt0",200,0.2,0.146894488215759,0.2622263645896
+"P1-09",1,"Omitted L_k^2, strong / strong","main","omit_Lsq_cs_os","CB","L_x_X",200,1,0.981724659644864,1
+"P1-10",1,"Omitted L_{k-1}, weak / none","main","omit_lag_cw_on","RRB","all",200,0.35,0.284070670322942,0.420450622477994
+"P1-10",1,"Omitted L_{k-1}, weak / none","main","omit_lag_cw_on","RRB","X",200,0.06,0.0313839538934835,0.102461831308324
+"P1-10",1,"Omitted L_{k-1}, weak / none","main","omit_lag_cw_on","RRB","L",200,0.065,0.035060708656979,0.108587236503815
+"P1-10",1,"Omitted L_{k-1}, weak / none","main","omit_lag_cw_on","RRB","L_sq",200,0.01,0.00121334901373603,0.0356546683972397
+"P1-10",1,"Omitted L_{k-1}, weak / none","main","omit_lag_cw_on","RRB","L_lagprod",200,0.02,0.00547556587955645,0.0504136090898963
+"P1-10",1,"Omitted L_{k-1}, weak / none","main","omit_lag_cw_on","RRB","L_diff",200,0.815,0.754136537551322,0.866271339820238
+"P1-10",1,"Omitted L_{k-1}, weak / none","main","omit_lag_cw_on","RRB","L_cummean",200,0.365,0.298233426367012,0.435834029789997
+"P1-10",1,"Omitted L_{k-1}, weak / none","main","omit_lag_cw_on","RRB","L_gt0",200,0.075,0.0425828037370926,0.120684225399661
+"P1-10",1,"Omitted L_{k-1}, weak / none","main","omit_lag_cw_on","RRB","L_x_X",200,0.005,0.000126581027867018,0.0275418984572056
+"P1-10",1,"Omitted L_{k-1}, weak / none","main","omit_lag_cw_on","CB","all",200,0.295,0.232768784223124,0.36342313331791
+"P1-10",1,"Omitted L_{k-1}, weak / none","main","omit_lag_cw_on","CB","X",200,0.115,0.0743133736922971,0.167546944482254
+"P1-10",1,"Omitted L_{k-1}, weak / none","main","omit_lag_cw_on","CB","L",200,0.105,0.0661812270287118,0.156018705547503
+"P1-10",1,"Omitted L_{k-1}, weak / none","main","omit_lag_cw_on","CB","L_sq",200,0.025,0.00816616619084252,0.0573743511268459
+"P1-10",1,"Omitted L_{k-1}, weak / none","main","omit_lag_cw_on","CB","L_lagprod",200,0.02,0.00547556587955645,0.0504136090898963
+"P1-10",1,"Omitted L_{k-1}, weak / none","main","omit_lag_cw_on","CB","L_diff",200,0.94,0.897538168691676,0.968616046106517
+"P1-10",1,"Omitted L_{k-1}, weak / none","main","omit_lag_cw_on","CB","L_cummean",200,0.395,0.326764991805063,0.466396428026518
+"P1-10",1,"Omitted L_{k-1}, weak / none","main","omit_lag_cw_on","CB","L_gt0",200,0.125,0.0825523418288169,0.178973750078799
+"P1-10",1,"Omitted L_{k-1}, weak / none","main","omit_lag_cw_on","CB","L_x_X",200,0.025,0.00816616619084252,0.0573743511268459
+"P1-11",1,"Omitted L_{k-1}, weak / strong","main","omit_lag_cw_os","RRB","all",200,0.47,0.399232941197114,0.541669499588525
+"P1-11",1,"Omitted L_{k-1}, weak / strong","main","omit_lag_cw_os","RRB","X",200,0.11,0.0702331635292118,0.1617962155695
+"P1-11",1,"Omitted L_{k-1}, weak / strong","main","omit_lag_cw_os","RRB","L",200,0.075,0.0425828037370926,0.120684225399661
+"P1-11",1,"Omitted L_{k-1}, weak / strong","main","omit_lag_cw_os","RRB","L_sq",200,0.03,0.0110874556722548,0.064150626705027
+"P1-11",1,"Omitted L_{k-1}, weak / strong","main","omit_lag_cw_os","RRB","L_lagprod",200,0.04,0.0174248089944806,0.077291968226016
+"P1-11",1,"Omitted L_{k-1}, weak / strong","main","omit_lag_cw_os","RRB","L_diff",200,0.875,0.8210262499212,0.917447658171183
+"P1-11",1,"Omitted L_{k-1}, weak / strong","main","omit_lag_cw_os","RRB","L_cummean",200,0.465,0.394352735261457,0.536700142211679
+"P1-11",1,"Omitted L_{k-1}, weak / strong","main","omit_lag_cw_os","RRB","L_gt0",200,0.05,0.0242341654721085,0.0900275377013514
+"P1-11",1,"Omitted L_{k-1}, weak / strong","main","omit_lag_cw_os","RRB","L_x_X",200,0.03,0.0110874556722548,0.064150626705027
+"P1-11",1,"Omitted L_{k-1}, weak / strong","main","omit_lag_cw_os","CB","all",200,0.29,0.228156989363511,0.358187452162291
+"P1-11",1,"Omitted L_{k-1}, weak / strong","main","omit_lag_cw_os","CB","X",200,0.135,0.0908871017548978,0.190309172683398
+"P1-11",1,"Omitted L_{k-1}, weak / strong","main","omit_lag_cw_os","CB","L",200,0.115,0.0743133736922971,0.167546944482254
+"P1-11",1,"Omitted L_{k-1}, weak / strong","main","omit_lag_cw_os","CB","L_sq",200,0.03,0.0110874556722548,0.064150626705027
+"P1-11",1,"Omitted L_{k-1}, weak / strong","main","omit_lag_cw_os","CB","L_lagprod",200,0.03,0.0110874556722548,0.064150626705027
+"P1-11",1,"Omitted L_{k-1}, weak / strong","main","omit_lag_cw_os","CB","L_diff",200,0.93,0.885340266462889,0.961204429570437
+"P1-11",1,"Omitted L_{k-1}, weak / strong","main","omit_lag_cw_os","CB","L_cummean",200,0.34,0.274668275830755,0.410155939088715
+"P1-11",1,"Omitted L_{k-1}, weak / strong","main","omit_lag_cw_os","CB","L_gt0",200,0.1,0.0621593662540661,0.150212787867756
+"P1-11",1,"Omitted L_{k-1}, weak / strong","main","omit_lag_cw_os","CB","L_x_X",200,0.03,0.0110874556722548,0.064150626705027
+"P1-12",1,"Omitted L_{k-1}, strong / none","main","omit_lag_cs_on","RRB","all",200,0.67,0.600170739666945,0.734701796527439
+"P1-12",1,"Omitted L_{k-1}, strong / none","main","omit_lag_cs_on","RRB","X",200,0.13,0.0867083527685753,0.184652330523413
+"P1-12",1,"Omitted L_{k-1}, strong / none","main","omit_lag_cs_on","RRB","L",200,0.095,0.0581696097251203,0.144376639976852
+"P1-12",1,"Omitted L_{k-1}, strong / none","main","omit_lag_cs_on","RRB","L_sq",200,0.04,0.0174248089944806,0.077291968226016
+"P1-12",1,"Omitted L_{k-1}, strong / none","main","omit_lag_cs_on","RRB","L_lagprod",200,0.06,0.0313839538934835,0.102461831308324
+"P1-12",1,"Omitted L_{k-1}, strong / none","main","omit_lag_cs_on","RRB","L_diff",200,0.995,0.972458101542794,0.999873418972133
+"P1-12",1,"Omitted L_{k-1}, strong / none","main","omit_lag_cs_on","RRB","L_cummean",200,0.69,0.620922959479674,0.753341962558275
+"P1-12",1,"Omitted L_{k-1}, strong / none","main","omit_lag_cs_on","RRB","L_gt0",200,0.17,0.120695623236217,0.229371600393886
+"P1-12",1,"Omitted L_{k-1}, strong / none","main","omit_lag_cs_on","RRB","L_x_X",200,0.035,0.0141855258984192,0.0707809983509773
+"P1-12",1,"Omitted L_{k-1}, strong / none","main","omit_lag_cs_on","CB","all",200,0.63,0.559053515215259,0.697030175728763
+"P1-12",1,"Omitted L_{k-1}, strong / none","main","omit_lag_cs_on","CB","X",200,0.275,0.214377415243095,0.342425418623751
+"P1-12",1,"Omitted L_{k-1}, strong / none","main","omit_lag_cs_on","CB","L",200,0.355,0.288783777713584,0.42558616692658
+"P1-12",1,"Omitted L_{k-1}, strong / none","main","omit_lag_cs_on","CB","L_sq",200,0.025,0.00816616619084252,0.0573743511268459
+"P1-12",1,"Omitted L_{k-1}, strong / none","main","omit_lag_cs_on","CB","L_lagprod",200,0.01,0.00121334901373603,0.0356546683972397
+"P1-12",1,"Omitted L_{k-1}, strong / none","main","omit_lag_cs_on","CB","L_diff",200,1,0.981724659644864,1
+"P1-12",1,"Omitted L_{k-1}, strong / none","main","omit_lag_cs_on","CB","L_cummean",200,0.85,0.792841296331449,0.896450476478137
+"P1-12",1,"Omitted L_{k-1}, strong / none","main","omit_lag_cs_on","CB","L_gt0",200,0.31,0.246658037441725,0.379077040520326
+"P1-12",1,"Omitted L_{k-1}, strong / none","main","omit_lag_cs_on","CB","L_x_X",200,0.035,0.0141855258984192,0.0707809983509773
+"P1-13",1,"Omitted L_{k-1}, strong / strong","main","omit_lag_cs_os","RRB","all",200,0.74,0.67342224634286,0.79931514512366
+"P1-13",1,"Omitted L_{k-1}, strong / strong","main","omit_lag_cs_os","RRB","X",200,0.115,0.0743133736922971,0.167546944482254
+"P1-13",1,"Omitted L_{k-1}, strong / strong","main","omit_lag_cs_os","RRB","L",200,0.07,0.0387955704295628,0.114659733537111
+"P1-13",1,"Omitted L_{k-1}, strong / strong","main","omit_lag_cs_os","RRB","L_sq",200,0.005,0.000126581027867018,0.0275418984572056
+"P1-13",1,"Omitted L_{k-1}, strong / strong","main","omit_lag_cs_os","RRB","L_lagprod",200,0.08,0.0464176083998226,0.126664856022082
+"P1-13",1,"Omitted L_{k-1}, strong / strong","main","omit_lag_cs_os","RRB","L_diff",200,1,0.981724659644864,1
+"P1-13",1,"Omitted L_{k-1}, strong / strong","main","omit_lag_cs_os","RRB","L_cummean",200,0.76,0.69469371435286,0.817428096107528
+"P1-13",1,"Omitted L_{k-1}, strong / strong","main","omit_lag_cs_os","RRB","L_gt0",200,0.13,0.0867083527685753,0.184652330523413
+"P1-13",1,"Omitted L_{k-1}, strong / strong","main","omit_lag_cs_os","RRB","L_x_X",200,0.02,0.00547556587955645,0.0504136090898963
+"P1-13",1,"Omitted L_{k-1}, strong / strong","main","omit_lag_cs_os","CB","all",200,0.62,0.548851242083448,0.68753456482233
+"P1-13",1,"Omitted L_{k-1}, strong / strong","main","omit_lag_cs_os","CB","X",200,0.21,0.155739756724128,0.273068704613799
+"P1-13",1,"Omitted L_{k-1}, strong / strong","main","omit_lag_cs_os","CB","L",200,0.44,0.370055579339044,0.511749730925303
+"P1-13",1,"Omitted L_{k-1}, strong / strong","main","omit_lag_cs_os","CB","L_sq",200,0.025,0.00816616619084252,0.0573743511268459
+"P1-13",1,"Omitted L_{k-1}, strong / strong","main","omit_lag_cs_os","CB","L_lagprod",200,0,0,0.0182753403551362
+"P1-13",1,"Omitted L_{k-1}, strong / strong","main","omit_lag_cs_os","CB","L_diff",200,1,0.981724659644864,1
+"P1-13",1,"Omitted L_{k-1}, strong / strong","main","omit_lag_cs_os","CB","L_cummean",200,0.895,0.843981294452497,0.933818772971288
+"P1-13",1,"Omitted L_{k-1}, strong / strong","main","omit_lag_cs_os","CB","L_gt0",200,0.375,0.307713848217641,0.446051374182585
+"P1-13",1,"Omitted L_{k-1}, strong / strong","main","omit_lag_cs_os","CB","L_x_X",200,0.03,0.0110874556722548,0.064150626705027
+"P2-01",2,"Correct specification, n = 300","largerep","correct_n300_1000","RRB","all",1000,0.022,0.0138374141720739,0.0331196645149878
+"P2-01",2,"Correct specification, n = 300","largerep","correct_n300_1000","RRB","X",1000,0.021,0.0130451922903877,0.0319223351804155
+"P2-01",2,"Correct specification, n = 300","largerep","correct_n300_1000","RRB","L",1000,0.028,0.0186846861955376,0.0402148873738433
+"P2-01",2,"Correct specification, n = 300","largerep","correct_n300_1000","RRB","L_sq",1000,0.028,0.0186846861955376,0.0402148873738433
+"P2-01",2,"Correct specification, n = 300","largerep","correct_n300_1000","RRB","L_lagprod",1000,0.029,0.0195059373243846,0.041384719116402
+"P2-01",2,"Correct specification, n = 300","largerep","correct_n300_1000","RRB","L_diff",1000,0.032,0.0219888496056424,0.0448759028350093
+"P2-01",2,"Correct specification, n = 300","largerep","correct_n300_1000","RRB","L_cummean",1000,0.025,0.0162425356968822,0.036684823051923
+"P2-01",2,"Correct specification, n = 300","largerep","correct_n300_1000","RRB","L_gt0",1000,0.026,0.0170527863456294,0.0378651224789215
+"P2-01",2,"Correct specification, n = 300","largerep","correct_n300_1000","RRB","L_x_X",1000,0.021,0.0130451922903877,0.0319223351804155
+"P2-01",2,"Correct specification, n = 300","largerep","correct_n300_1000","CB","all",1000,0.028,0.0186846861955376,0.0402148873738433
+"P2-01",2,"Correct specification, n = 300","largerep","correct_n300_1000","CB","X",1000,0.042,0.03043470626314,0.0563502915757448
+"P2-01",2,"Correct specification, n = 300","largerep","correct_n300_1000","CB","L",1000,0.031,0.0211581719702086,0.0437150850062389
+"P2-01",2,"Correct specification, n = 300","largerep","correct_n300_1000","CB","L_sq",1000,0.026,0.0170527863456294,0.0378651224789215
+"P2-01",2,"Correct specification, n = 300","largerep","correct_n300_1000","CB","L_lagprod",1000,0.038,0.0270288159829839,0.0517871036219641
+"P2-01",2,"Correct specification, n = 300","largerep","correct_n300_1000","CB","L_diff",1000,0.047,0.034735062266796,0.0620126306933052
+"P2-01",2,"Correct specification, n = 300","largerep","correct_n300_1000","CB","L_cummean",1000,0.039,0.0278771487953364,0.0529309357854451
+"P2-01",2,"Correct specification, n = 300","largerep","correct_n300_1000","CB","L_gt0",1000,0.044,0.0321494970108714,0.0586204192063309
+"P2-01",2,"Correct specification, n = 300","largerep","correct_n300_1000","CB","L_x_X",1000,0.037,0.0261827088437373,0.0506411230599249
+"P2-02",2,"Correct specification, n = 8000","largerep","correct_n8000_500","RRB","all",500,0.022,0.0110322763612575,0.0390225508448088
+"P2-02",2,"Correct specification, n = 8000","largerep","correct_n8000_500","RRB","X",500,0.06,0.0408441817627769,0.0845485537076002
+"P2-02",2,"Correct specification, n = 8000","largerep","correct_n8000_500","RRB","L",500,0.03,0.0168859842038732,0.048998225708819
+"P2-02",2,"Correct specification, n = 8000","largerep","correct_n8000_500","RRB","L_sq",500,0.024,0.0124612390595557,0.0415476187996863
+"P2-02",2,"Correct specification, n = 8000","largerep","correct_n8000_500","RRB","L_lagprod",500,0.042,0.0261835767761471,0.0634869405329189
+"P2-02",2,"Correct specification, n = 8000","largerep","correct_n8000_500","RRB","L_diff",500,0.04,0.0246013120855454,0.0611026093882446
+"P2-02",2,"Correct specification, n = 8000","largerep","correct_n8000_500","RRB","L_cummean",500,0.046,0.0293801753924028,0.0682254278812379
+"P2-02",2,"Correct specification, n = 8000","largerep","correct_n8000_500","RRB","L_gt0",500,0.04,0.0246013120855454,0.0611026093882446
+"P2-02",2,"Correct specification, n = 8000","largerep","correct_n8000_500","RRB","L_x_X",500,0.026,0.0139149300628597,0.0440504368568738
+"P2-02",2,"Correct specification, n = 8000","largerep","correct_n8000_500","CB","all",500,0.042,0.0261835767761471,0.0634869405329189
+"P2-02",2,"Correct specification, n = 8000","largerep","correct_n8000_500","CB","X",500,0.064,0.0441842109467132,0.0891506275508634
+"P2-02",2,"Correct specification, n = 8000","largerep","correct_n8000_500","CB","L",500,0.05,0.0326151801493301,0.072927621650479
+"P2-02",2,"Correct specification, n = 8000","largerep","correct_n8000_500","CB","L_sq",500,0.038,0.0230307708062476,0.0587072904632285
+"P2-02",2,"Correct specification, n = 8000","largerep","correct_n8000_500","CB","L_lagprod",500,0.034,0.0199286000462063,0.0538803507360769
+"P2-02",2,"Correct specification, n = 8000","largerep","correct_n8000_500","CB","L_diff",500,0.04,0.0246013120855454,0.0611026093882446
+"P2-02",2,"Correct specification, n = 8000","largerep","correct_n8000_500","CB","L_cummean",500,0.05,0.0326151801493301,0.072927621650479
+"P2-02",2,"Correct specification, n = 8000","largerep","correct_n8000_500","CB","L_gt0",500,0.054,0.0358842597219337,0.0775974684949372
+"P2-02",2,"Correct specification, n = 8000","largerep","correct_n8000_500","CB","L_x_X",500,0.052,0.0342456980827679,0.0752663710306222
+"P2-03",2,"Near-violation of positivity","main","near_positivity","RRB","all",200,0.04,0.0174248089944806,0.077291968226016
+"P2-03",2,"Near-violation of positivity","main","near_positivity","RRB","X",200,0.015,0.00310410762155351,0.0432082819177126
+"P2-03",2,"Near-violation of positivity","main","near_positivity","RRB","L",200,0.03,0.0110874556722548,0.064150626705027
+"P2-03",2,"Near-violation of positivity","main","near_positivity","RRB","L_sq",200,0.045,0.0207804222270043,0.083702688075854
+"P2-03",2,"Near-violation of positivity","main","near_positivity","RRB","L_lagprod",200,0.04,0.0174248089944806,0.077291968226016
+"P2-03",2,"Near-violation of positivity","main","near_positivity","RRB","L_diff",200,0.015,0.00310410762155351,0.0432082819177126
+"P2-03",2,"Near-violation of positivity","main","near_positivity","RRB","L_cummean",200,0.04,0.0174248089944806,0.077291968226016
+"P2-03",2,"Near-violation of positivity","main","near_positivity","RRB","L_gt0",200,0.04,0.0174248089944806,0.077291968226016
+"P2-03",2,"Near-violation of positivity","main","near_positivity","RRB","L_x_X",200,0.035,0.0141855258984192,0.0707809983509773
+"P2-03",2,"Near-violation of positivity","main","near_positivity","CB","all",200,0.035,0.0141855258984192,0.0707809983509773
+"P2-03",2,"Near-violation of positivity","main","near_positivity","CB","X",200,0.005,0.000126581027867018,0.0275418984572056
+"P2-03",2,"Near-violation of positivity","main","near_positivity","CB","L",200,0.03,0.0110874556722548,0.064150626705027
+"P2-03",2,"Near-violation of positivity","main","near_positivity","CB","L_sq",200,0.05,0.0242341654721085,0.0900275377013514
+"P2-03",2,"Near-violation of positivity","main","near_positivity","CB","L_lagprod",200,0.03,0.0110874556722548,0.064150626705027
+"P2-03",2,"Near-violation of positivity","main","near_positivity","CB","L_diff",200,0.025,0.00816616619084252,0.0573743511268459
+"P2-03",2,"Near-violation of positivity","main","near_positivity","CB","L_cummean",200,0.03,0.0110874556722548,0.064150626705027
+"P2-03",2,"Near-violation of positivity","main","near_positivity","CB","L_gt0",200,0.03,0.0110874556722548,0.064150626705027
+"P2-03",2,"Near-violation of positivity","main","near_positivity","CB","L_x_X",200,0.025,0.00816616619084252,0.0573743511268459
+"P2-04",2,"Weight truncation, 95th percentile","main","truncation_95","RRB","all",200,0.045,0.0207804222270043,0.083702688075854
+"P2-04",2,"Weight truncation, 95th percentile","main","truncation_95","RRB","X",200,0.045,0.0207804222270043,0.083702688075854
+"P2-04",2,"Weight truncation, 95th percentile","main","truncation_95","RRB","L",200,0.04,0.0174248089944806,0.077291968226016
+"P2-04",2,"Weight truncation, 95th percentile","main","truncation_95","RRB","L_sq",200,0.04,0.0174248089944806,0.077291968226016
+"P2-04",2,"Weight truncation, 95th percentile","main","truncation_95","RRB","L_lagprod",200,0.02,0.00547556587955645,0.0504136090898963
+"P2-04",2,"Weight truncation, 95th percentile","main","truncation_95","RRB","L_diff",200,0.045,0.0207804222270043,0.083702688075854
+"P2-04",2,"Weight truncation, 95th percentile","main","truncation_95","RRB","L_cummean",200,0.04,0.0174248089944806,0.077291968226016
+"P2-04",2,"Weight truncation, 95th percentile","main","truncation_95","RRB","L_gt0",200,0.06,0.0313839538934835,0.102461831308324
+"P2-04",2,"Weight truncation, 95th percentile","main","truncation_95","RRB","L_x_X",200,0.03,0.0110874556722548,0.064150626705027
+"P2-04",2,"Weight truncation, 95th percentile","main","truncation_95","CB","all",200,0.05,0.0242341654721085,0.0900275377013514
+"P2-04",2,"Weight truncation, 95th percentile","main","truncation_95","CB","X",200,0.055,0.0277722545520065,0.0962776444339128
+"P2-04",2,"Weight truncation, 95th percentile","main","truncation_95","CB","L",200,0.045,0.0207804222270043,0.083702688075854
+"P2-04",2,"Weight truncation, 95th percentile","main","truncation_95","CB","L_sq",200,0.04,0.0174248089944806,0.077291968226016
+"P2-04",2,"Weight truncation, 95th percentile","main","truncation_95","CB","L_lagprod",200,0.045,0.0207804222270043,0.083702688075854
+"P2-04",2,"Weight truncation, 95th percentile","main","truncation_95","CB","L_diff",200,0.065,0.035060708656979,0.108587236503815
+"P2-04",2,"Weight truncation, 95th percentile","main","truncation_95","CB","L_cummean",200,0.075,0.0425828037370926,0.120684225399661
+"P2-04",2,"Weight truncation, 95th percentile","main","truncation_95","CB","L_gt0",200,0.07,0.0387955704295628,0.114659733537111
+"P2-04",2,"Weight truncation, 95th percentile","main","truncation_95","CB","L_x_X",200,0.02,0.00547556587955645,0.0504136090898963
+"P2-05",2,"Many correlated covariates","manycov","many_cov_n300","RRB","all",200,0.025,0.00816616619084252,0.0573743511268459
+"P2-05",2,"Many correlated covariates","manycov","many_cov_n300","RRB","X",200,0.015,0.00310410762155351,0.0432082819177126
+"P2-05",2,"Many correlated covariates","manycov","many_cov_n300","RRB","L",200,0,0,0.0182753403551362
+"P2-05",2,"Many correlated covariates","manycov","many_cov_n300","RRB","L_sq",200,0,0,0.0182753403551362
+"P2-05",2,"Many correlated covariates","manycov","many_cov_n300","RRB","L_lagprod",200,0.035,0.0141855258984192,0.0707809983509773
+"P2-05",2,"Many correlated covariates","manycov","many_cov_n300","RRB","L_diff",200,0.03,0.0110874556722548,0.064150626705027
+"P2-05",2,"Many correlated covariates","manycov","many_cov_n300","RRB","L_cummean",200,0.02,0.00547556587955645,0.0504136090898963
+"P2-05",2,"Many correlated covariates","manycov","many_cov_n300","RRB","L_gt0",200,0.015,0.00310410762155351,0.0432082819177126
+"P2-05",2,"Many correlated covariates","manycov","many_cov_n300","RRB","L_x_X",200,0.03,0.0110874556722548,0.064150626705027
+"P2-05",2,"Many correlated covariates","manycov","many_cov_n300","RRB","X2",200,0.02,0.00547556587955645,0.0504136090898963
+"P2-05",2,"Many correlated covariates","manycov","many_cov_n300","RRB","X3",200,0.03,0.0110874556722548,0.064150626705027
+"P2-05",2,"Many correlated covariates","manycov","many_cov_n300","RRB","X4",200,0.01,0.00121334901373603,0.0356546683972397
+"P2-05",2,"Many correlated covariates","manycov","many_cov_n300","RRB","X5",200,0.02,0.00547556587955645,0.0504136090898963
+"P2-05",2,"Many correlated covariates","manycov","many_cov_n300","RRB","X6",200,0.025,0.00816616619084252,0.0573743511268459
+"P2-05",2,"Many correlated covariates","manycov","many_cov_n300","RRB","X7",200,0.015,0.00310410762155351,0.0432082819177126
+"P2-05",2,"Many correlated covariates","manycov","many_cov_n300","RRB","X8",200,0,0,0.0182753403551362
+"P2-05",2,"Many correlated covariates","manycov","many_cov_n300","RRB","X9",200,0.02,0.00547556587955645,0.0504136090898963
+"P2-05",2,"Many correlated covariates","manycov","many_cov_n300","CB","all",200,0.045,0.0207804222270043,0.083702688075854
+"P2-05",2,"Many correlated covariates","manycov","many_cov_n300","CB","X",200,0.055,0.0277722545520065,0.0962776444339128
+"P2-05",2,"Many correlated covariates","manycov","many_cov_n300","CB","L",200,0.05,0.0242341654721085,0.0900275377013514
+"P2-05",2,"Many correlated covariates","manycov","many_cov_n300","CB","L_sq",200,0.05,0.0242341654721085,0.0900275377013514
+"P2-05",2,"Many correlated covariates","manycov","many_cov_n300","CB","L_lagprod",200,0.065,0.035060708656979,0.108587236503815
+"P2-05",2,"Many correlated covariates","manycov","many_cov_n300","CB","L_diff",200,0.045,0.0207804222270043,0.083702688075854
+"P2-05",2,"Many correlated covariates","manycov","many_cov_n300","CB","L_cummean",200,0.04,0.0174248089944806,0.077291968226016
+"P2-05",2,"Many correlated covariates","manycov","many_cov_n300","CB","L_gt0",200,0.035,0.0141855258984192,0.0707809983509773
+"P2-05",2,"Many correlated covariates","manycov","many_cov_n300","CB","L_x_X",200,0.03,0.0110874556722548,0.064150626705027
+"P2-05",2,"Many correlated covariates","manycov","many_cov_n300","CB","X2",200,0.03,0.0110874556722548,0.064150626705027
+"P2-05",2,"Many correlated covariates","manycov","many_cov_n300","CB","X3",200,0.035,0.0141855258984192,0.0707809983509773
+"P2-05",2,"Many correlated covariates","manycov","many_cov_n300","CB","X4",200,0.035,0.0141855258984192,0.0707809983509773
+"P2-05",2,"Many correlated covariates","manycov","many_cov_n300","CB","X5",200,0.02,0.00547556587955645,0.0504136090898963
+"P2-05",2,"Many correlated covariates","manycov","many_cov_n300","CB","X6",200,0.04,0.0174248089944806,0.077291968226016
+"P2-05",2,"Many correlated covariates","manycov","many_cov_n300","CB","X7",200,0.045,0.0207804222270043,0.083702688075854
+"P2-05",2,"Many correlated covariates","manycov","many_cov_n300","CB","X8",200,0.035,0.0141855258984192,0.0707809983509773
+"P2-05",2,"Many correlated covariates","manycov","many_cov_n300","CB","X9",200,0.015,0.00310410762155351,0.0432082819177126
+"P2-06",2,"Extreme weights","manycov","extreme_weights","RRB","all",200,0.03,0.0110874556722548,0.064150626705027
+"P2-06",2,"Extreme weights","manycov","extreme_weights","RRB","X",200,0.01,0.00121334901373603,0.0356546683972397
+"P2-06",2,"Extreme weights","manycov","extreme_weights","RRB","L",200,0.015,0.00310410762155351,0.0432082819177126
+"P2-06",2,"Extreme weights","manycov","extreme_weights","RRB","L_sq",200,0.04,0.0174248089944806,0.077291968226016
+"P2-06",2,"Extreme weights","manycov","extreme_weights","RRB","L_lagprod",200,0.045,0.0207804222270043,0.083702688075854
+"P2-06",2,"Extreme weights","manycov","extreme_weights","RRB","L_diff",200,0.025,0.00816616619084252,0.0573743511268459
+"P2-06",2,"Extreme weights","manycov","extreme_weights","RRB","L_cummean",200,0.01,0.00121334901373603,0.0356546683972397
+"P2-06",2,"Extreme weights","manycov","extreme_weights","RRB","L_gt0",200,0.01,0.00121334901373603,0.0356546683972397
+"P2-06",2,"Extreme weights","manycov","extreme_weights","RRB","L_x_X",200,0.035,0.0141855258984192,0.0707809983509773
+"P2-06",2,"Extreme weights","manycov","extreme_weights","CB","all",200,0.03,0.0110874556722548,0.064150626705027
+"P2-06",2,"Extreme weights","manycov","extreme_weights","CB","X",200,0.025,0.00816616619084252,0.0573743511268459
+"P2-06",2,"Extreme weights","manycov","extreme_weights","CB","L",200,0.02,0.00547556587955645,0.0504136090898963
+"P2-06",2,"Extreme weights","manycov","extreme_weights","CB","L_sq",200,0.02,0.00547556587955645,0.0504136090898963
+"P2-06",2,"Extreme weights","manycov","extreme_weights","CB","L_lagprod",200,0.035,0.0141855258984192,0.0707809983509773
+"P2-06",2,"Extreme weights","manycov","extreme_weights","CB","L_diff",200,0.035,0.0141855258984192,0.0707809983509773
+"P2-06",2,"Extreme weights","manycov","extreme_weights","CB","L_cummean",200,0.02,0.00547556587955645,0.0504136090898963
+"P2-06",2,"Extreme weights","manycov","extreme_weights","CB","L_gt0",200,0.035,0.0141855258984192,0.0707809983509773
+"P2-06",2,"Extreme weights","manycov","extreme_weights","CB","L_x_X",200,0.055,0.0277722545520065,0.0962776444339128
+"P3-01",3,"No treatment->covariate effect","main","no_tx_cov_effect","RRB","all",200,0.025,0.00816616619084252,0.0573743511268459
+"P3-01",3,"No treatment->covariate effect","main","no_tx_cov_effect","RRB","X",200,0.065,0.035060708656979,0.108587236503815
+"P3-01",3,"No treatment->covariate effect","main","no_tx_cov_effect","RRB","L",200,0.045,0.0207804222270043,0.083702688075854
+"P3-01",3,"No treatment->covariate effect","main","no_tx_cov_effect","RRB","L_sq",200,0.04,0.0174248089944806,0.077291968226016
+"P3-01",3,"No treatment->covariate effect","main","no_tx_cov_effect","RRB","L_lagprod",200,0.04,0.0174248089944806,0.077291968226016
+"P3-01",3,"No treatment->covariate effect","main","no_tx_cov_effect","RRB","L_diff",200,0.015,0.00310410762155351,0.0432082819177126
+"P3-01",3,"No treatment->covariate effect","main","no_tx_cov_effect","RRB","L_cummean",200,0.06,0.0313839538934835,0.102461831308324
+"P3-01",3,"No treatment->covariate effect","main","no_tx_cov_effect","RRB","L_gt0",200,0.03,0.0110874556722548,0.064150626705027
+"P3-01",3,"No treatment->covariate effect","main","no_tx_cov_effect","RRB","L_x_X",200,0.045,0.0207804222270043,0.083702688075854
+"P3-01",3,"No treatment->covariate effect","main","no_tx_cov_effect","CB","all",200,0.03,0.0110874556722548,0.064150626705027
+"P3-01",3,"No treatment->covariate effect","main","no_tx_cov_effect","CB","X",200,0.035,0.0141855258984192,0.0707809983509773
+"P3-01",3,"No treatment->covariate effect","main","no_tx_cov_effect","CB","L",200,0.045,0.0207804222270043,0.083702688075854
+"P3-01",3,"No treatment->covariate effect","main","no_tx_cov_effect","CB","L_sq",200,0.06,0.0313839538934835,0.102461831308324
+"P3-01",3,"No treatment->covariate effect","main","no_tx_cov_effect","CB","L_lagprod",200,0.045,0.0207804222270043,0.083702688075854
+"P3-01",3,"No treatment->covariate effect","main","no_tx_cov_effect","CB","L_diff",200,0.065,0.035060708656979,0.108587236503815
+"P3-01",3,"No treatment->covariate effect","main","no_tx_cov_effect","CB","L_cummean",200,0.065,0.035060708656979,0.108587236503815
+"P3-01",3,"No treatment->covariate effect","main","no_tx_cov_effect","CB","L_gt0",200,0.055,0.0277722545520065,0.0962776444339128
+"P3-01",3,"No treatment->covariate effect","main","no_tx_cov_effect","CB","L_x_X",200,0.065,0.035060708656979,0.108587236503815
+"P3-02",3,"Strong treatment->covariate effect","main","strong_tx_cov_effect","RRB","all",200,0.04,0.0174248089944806,0.077291968226016
+"P3-02",3,"Strong treatment->covariate effect","main","strong_tx_cov_effect","RRB","X",200,0.045,0.0207804222270043,0.083702688075854
+"P3-02",3,"Strong treatment->covariate effect","main","strong_tx_cov_effect","RRB","L",200,0.03,0.0110874556722548,0.064150626705027
+"P3-02",3,"Strong treatment->covariate effect","main","strong_tx_cov_effect","RRB","L_sq",200,0.03,0.0110874556722548,0.064150626705027
+"P3-02",3,"Strong treatment->covariate effect","main","strong_tx_cov_effect","RRB","L_lagprod",200,0.04,0.0174248089944806,0.077291968226016
+"P3-02",3,"Strong treatment->covariate effect","main","strong_tx_cov_effect","RRB","L_diff",200,0.05,0.0242341654721085,0.0900275377013514
+"P3-02",3,"Strong treatment->covariate effect","main","strong_tx_cov_effect","RRB","L_cummean",200,0.035,0.0141855258984192,0.0707809983509773
+"P3-02",3,"Strong treatment->covariate effect","main","strong_tx_cov_effect","RRB","L_gt0",200,0.025,0.00816616619084252,0.0573743511268459
+"P3-02",3,"Strong treatment->covariate effect","main","strong_tx_cov_effect","RRB","L_x_X",200,0.03,0.0110874556722548,0.064150626705027
+"P3-02",3,"Strong treatment->covariate effect","main","strong_tx_cov_effect","CB","all",200,0.045,0.0207804222270043,0.083702688075854
+"P3-02",3,"Strong treatment->covariate effect","main","strong_tx_cov_effect","CB","X",200,0.065,0.035060708656979,0.108587236503815
+"P3-02",3,"Strong treatment->covariate effect","main","strong_tx_cov_effect","CB","L",200,0.03,0.0110874556722548,0.064150626705027
+"P3-02",3,"Strong treatment->covariate effect","main","strong_tx_cov_effect","CB","L_sq",200,0.06,0.0313839538934835,0.102461831308324
+"P3-02",3,"Strong treatment->covariate effect","main","strong_tx_cov_effect","CB","L_lagprod",200,0.04,0.0174248089944806,0.077291968226016
+"P3-02",3,"Strong treatment->covariate effect","main","strong_tx_cov_effect","CB","L_diff",200,0.055,0.0277722545520065,0.0962776444339128
+"P3-02",3,"Strong treatment->covariate effect","main","strong_tx_cov_effect","CB","L_cummean",200,0.05,0.0242341654721085,0.0900275377013514
+"P3-02",3,"Strong treatment->covariate effect","main","strong_tx_cov_effect","CB","L_gt0",200,0.045,0.0207804222270043,0.083702688075854
+"P3-02",3,"Strong treatment->covariate effect","main","strong_tx_cov_effect","CB","L_x_X",200,0.035,0.0141855258984192,0.0707809983509773
+"P3-03",3,"Unweighted loss to follow-up","main","extra_ltfu","RRB","all",200,0.035,0.0141855258984192,0.0707809983509773
+"P3-03",3,"Unweighted loss to follow-up","main","extra_ltfu","RRB","X",200,0.02,0.00547556587955645,0.0504136090898963
+"P3-03",3,"Unweighted loss to follow-up","main","extra_ltfu","RRB","L",200,0.025,0.00816616619084252,0.0573743511268459
+"P3-03",3,"Unweighted loss to follow-up","main","extra_ltfu","RRB","L_sq",200,0.02,0.00547556587955645,0.0504136090898963
+"P3-03",3,"Unweighted loss to follow-up","main","extra_ltfu","RRB","L_lagprod",200,0.015,0.00310410762155351,0.0432082819177126
+"P3-03",3,"Unweighted loss to follow-up","main","extra_ltfu","RRB","L_diff",200,0.025,0.00816616619084252,0.0573743511268459
+"P3-03",3,"Unweighted loss to follow-up","main","extra_ltfu","RRB","L_cummean",200,0.03,0.0110874556722548,0.064150626705027
+"P3-03",3,"Unweighted loss to follow-up","main","extra_ltfu","RRB","L_gt0",200,0.055,0.0277722545520065,0.0962776444339128
+"P3-03",3,"Unweighted loss to follow-up","main","extra_ltfu","RRB","L_x_X",200,0.02,0.00547556587955645,0.0504136090898963
+"P3-03",3,"Unweighted loss to follow-up","main","extra_ltfu","CB","all",200,0.04,0.0174248089944806,0.077291968226016
+"P3-03",3,"Unweighted loss to follow-up","main","extra_ltfu","CB","X",200,0.055,0.0277722545520065,0.0962776444339128
+"P3-03",3,"Unweighted loss to follow-up","main","extra_ltfu","CB","L",200,0.015,0.00310410762155351,0.0432082819177126
+"P3-03",3,"Unweighted loss to follow-up","main","extra_ltfu","CB","L_sq",200,0.03,0.0110874556722548,0.064150626705027
+"P3-03",3,"Unweighted loss to follow-up","main","extra_ltfu","CB","L_lagprod",200,0.055,0.0277722545520065,0.0962776444339128
+"P3-03",3,"Unweighted loss to follow-up","main","extra_ltfu","CB","L_diff",200,0.04,0.0174248089944806,0.077291968226016
+"P3-03",3,"Unweighted loss to follow-up","main","extra_ltfu","CB","L_cummean",200,0.035,0.0141855258984192,0.0707809983509773
+"P3-03",3,"Unweighted loss to follow-up","main","extra_ltfu","CB","L_gt0",200,0.035,0.0141855258984192,0.0707809983509773
+"P3-03",3,"Unweighted loss to follow-up","main","extra_ltfu","CB","L_x_X",200,0.035,0.0141855258984192,0.0707809983509773
+"P3-04",3,"Many early events","variants","early_events_b500","RRB","all",200,0.03,0.0110874556722548,0.064150626705027
+"P3-04",3,"Many early events","variants","early_events_b500","RRB","X",200,0.015,0.00310410762155351,0.0432082819177126
+"P3-04",3,"Many early events","variants","early_events_b500","RRB","L",200,0.015,0.00310410762155351,0.0432082819177126
+"P3-04",3,"Many early events","variants","early_events_b500","RRB","L_sq",200,0.025,0.00816616619084252,0.0573743511268459
+"P3-04",3,"Many early events","variants","early_events_b500","RRB","L_lagprod",200,0.04,0.0174248089944806,0.077291968226016
+"P3-04",3,"Many early events","variants","early_events_b500","RRB","L_diff",200,0.055,0.0277722545520065,0.0962776444339128
+"P3-04",3,"Many early events","variants","early_events_b500","RRB","L_cummean",200,0.035,0.0141855258984192,0.0707809983509773
+"P3-04",3,"Many early events","variants","early_events_b500","RRB","L_gt0",200,0.015,0.00310410762155351,0.0432082819177126
+"P3-04",3,"Many early events","variants","early_events_b500","RRB","L_x_X",200,0.01,0.00121334901373603,0.0356546683972397
+"P3-04",3,"Many early events","variants","early_events_b500","CB","all",200,0.08,0.0464176083998226,0.126664856022082
+"P3-04",3,"Many early events","variants","early_events_b500","CB","X",200,0.055,0.0277722545520065,0.0962776444339128
+"P3-04",3,"Many early events","variants","early_events_b500","CB","L",200,0.065,0.035060708656979,0.108587236503815
+"P3-04",3,"Many early events","variants","early_events_b500","CB","L_sq",200,0.065,0.035060708656979,0.108587236503815
+"P3-04",3,"Many early events","variants","early_events_b500","CB","L_lagprod",200,0.08,0.0464176083998226,0.126664856022082
+"P3-04",3,"Many early events","variants","early_events_b500","CB","L_diff",200,0.045,0.0207804222270043,0.083702688075854
+"P3-04",3,"Many early events","variants","early_events_b500","CB","L_cummean",200,0.05,0.0242341654721085,0.0900275377013514
+"P3-04",3,"Many early events","variants","early_events_b500","CB","L_gt0",200,0.07,0.0387955704295628,0.114659733537111
+"P3-04",3,"Many early events","variants","early_events_b500","CB","L_x_X",200,0.045,0.0207804222270043,0.083702688075854

@@ -1,0 +1,36 @@
+Package: ccwbalance
+Type: Package
+Title: Artificial-Censoring Diagnostics for Clone-Censor-Weight Analyses
+Version: 0.1.0
+Authors@R:
+    person("Yuta", "Nonomiya", role = c("aut", "cre"),
+           email = "ynonomiya.ocum@gmail.com")
+Description: Diagnostics for the artificial-censoring weights of
+    clone-censor-weight analyses in target trial emulation. Provides
+    interval and cumulative risk-set reconstruction balance, with
+    Kolmogorov-Smirnov and Mahalanobis versions; censoring balance; a
+    conditional parametric null reference for the maximum absolute
+    imbalance; an individual-level bootstrap; end-of-grace and
+    between-strategy standardised mean differences; weight-support
+    summaries; plots; construction of the long data from observational
+    records; and a simulation data-generating mechanism.
+URL: https://github.com/Nonokyu/ccwbalance
+BugReports: https://github.com/Nonokyu/ccwbalance/issues
+License: MIT + file LICENSE
+Encoding: UTF-8
+Roxygen: list(markdown = TRUE)
+Depends:
+    R (>= 4.1.0)
+Imports:
+    dplyr,
+    ggplot2,
+    rlang,
+    stats,
+    tidyr,
+    utils
+Suggests:
+    gridExtra,
+    patchwork,
+    testthat (>= 3.0.0)
+Config/testthat/edition: 3
+Config/roxygen2/version: 8.1.0
