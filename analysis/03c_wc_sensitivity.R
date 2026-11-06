@@ -1,135 +1,105 @@
 # 03c_wc_sensitivity.R --------------------------------------------------------
 # Webster-Clark SynPUF example (analysis/03): uncertainty of the RRB profile
-# and a sensitivity analysis that adds race to the censoring model.
+# and a sensitivity analysis over the censoring-model specification.
 #
-# Data preparation and the base censoring model are identical to
-# analysis/03_empirical_webster_clark.R and 03b_wc_null_reference.R.
+# Data preparation (analysis/wc_data.R) and the base censoring model are
+# identical to analysis/03_empirical_webster_clark.R and 03b. Features: the
+# eleven history functions (five baseline covariates, the three time-varying
+# claims indicators visit, outpt, fill, and the three depth functions
+# fill_lag, fill_30, fill_cum, which enter no censoring model) for interval
+# RRB and the null reference; the five baseline covariates for cumulative
+# RRB.
 #
 # 1. Base model (age, sex, renal; time terms in the no-initiation phase):
 #    individual bootstrap of the weighted RRB (rrb_boot(), B = WC_RRB_BOOT,
 #    censoring model refitted per resample), cumulative and interval scope.
-# 2. Sensitivity model: race_black + race_other added to both phase formulas.
+# 2. Sensitivity models, each adding terms to both phase formulas:
+#      race  + race_black + race_other
+#      use   + visit + outpt + fill
+#      full  + race_black + race_other + visit + outpt + fill
 #    Interval and cumulative RRB (unweighted, weighted), weight support, the
-#    conditional parametric null reference (rrb_null(), NULL_DRAWS draws) and
-#    the 180-day risks / risk differences vs 0_30 with the individual
-#    bootstrap SE of analysis/03 (same code, same seed 20260923).
-# 3. Comparison table base vs race model (printed and saved).
+#    conditional parametric null reference (rrb_null(), NULL_DRAWS draws,
+#    seed 20260925) and the 180-day risks / risk difference 0_90 vs 0_30
+#    with the individual bootstrap SE of analysis/03 (same resamples, seed
+#    20260923; the time-varying covariates of each resampled individual are
+#    carried along, wc_boot_long()).
+# 3. Comparison table base / race / use / full (printed and saved): per
+#    history function the weighted interval RRB at day 30 (0_30, time 2)
+#    and day 90 (0_90, time 8) and the MaxIB over all strategies with its
+#    null 95th percentile and p; the overall MaxIB; cumulative RRB of
+#    race_other at the grace ends; ESS/|R|, w99, risks and risk difference;
+#    appended last (rows "Studentised max ..."), the studentised maximum
+#    max |RRB| / null SD over all strategies per function and overall, with
+#    its null 95th percentile and p (rrb_null()$maxib_stud).
 #
 # Outputs (git-ignored, output/empirical/):
 #   wc_rrb_boot_cumulative.csv, wc_rrb_boot_interval.csv   (base model)
-#   wc_race_rrb.csv, wc_race_weight_support.csv,
-#   wc_race_null_maxib.csv, wc_race_null_cells.csv, wc_race_estimates.csv,
-#   wc_race_comparison.csv
+#   wc_<model>_rrb.csv, wc_<model>_weight_support.csv,
+#   wc_<model>_null_maxib.csv, wc_<model>_null_maxib_stud.csv,
+#   wc_<model>_null_cells.csv,
+#   wc_<model>_estimates.csv   for <model> = race, use, full
+#   (base model: wc_rrb_null_*.csv of analysis/03b)
+#   wc_model_comparison.csv
 #
 # Run from the project root:  Rscript analysis/03c_wc_sensitivity.R
 #   WC_RRB_BOOT (default 200), WC_N_BOOT (default 200), NULL_DRAWS (500)
 
 if (!file.exists("DESCRIPTION")) stop("Run this script from the project root.")
-data_file <- file.path("data-raw", "webster_clark", "Data",
-                       "baseccwcohort.sas7bdat")
-if (!file.exists(data_file)) {
-  stop("Data not found: ", data_file, "\nRun:\n  git clone ",
-       "https://github.com/mawcpharmdphd/CCW_tutorial data-raw/webster_clark")
-}
 suppressMessages(pkgload::load_all(".", quiet = TRUE))
+source(file.path("analysis", "wc_data.R"))
 
 RRB_BOOT <- as.numeric(Sys.getenv("WC_RRB_BOOT", "200"))
 N_BOOT <- as.numeric(Sys.getenv("WC_N_BOOT", "200"))
 N_DRAWS <- as.numeric(Sys.getenv("NULL_DRAWS", "500"))
-DELTA <- 10
-HORIZON <- 180
-K <- HORIZON / DELTA
 out_dir <- file.path("output", "empirical")
 dir.create(out_dir, recursive = TRUE, showWarnings = FALSE)
 save_csv <- function(x, name) {
   utils::write.csv(x, file.path(out_dir, name), row.names = FALSE)
 }
+secs <- function(t0) as.numeric(difftime(Sys.time(), t0, units = "secs"))
 t_start <- Sys.time()
 
-# 1. Cohort and base censoring model (as in analysis/03) ----------------------
-raw <- haven::read_sas(data_file)
-cohort <- data.frame(
-  id = seq_len(nrow(raw)), ID = raw$ID,
-  age = raw$baseline_age,
-  female = as.numeric(raw$sex == "2"),
-  renal = as.numeric(raw$renal == "Y"),
-  race_black = as.numeric(raw$race == "2"),
-  race_other = as.numeric(raw$race %in% c("3", "5")),
-  rx = raw$RX_start, fu = raw$followup, outcome = raw$outcome
-)
-day_to_int <- function(d) floor(d / DELTA)
-cohort$init_time <- ifelse(is.na(cohort$rx) | cohort$rx >= HORIZON, Inf,
-                           day_to_int(cohort$rx))
-cohort$event_time <- ifelse(cohort$outcome == 1 & cohort$fu <= HORIZON,
-                            pmin(day_to_int(cohort$fu), K - 1), Inf)
-cohort$ltfu_time <- ifelse(cohort$outcome == 0 & cohort$fu < HORIZON,
-                           day_to_int(cohort$fu), Inf)
-
-covs <- c("age", "female", "renal", "race_black", "race_other")
-w30 <- day_to_int(30)
-w90 <- day_to_int(90)
-strategies <- list("0_30" = c(0, w30 - 1), "0_90" = c(0, w90 - 1),
-                   "30_90" = c(w30, w90 - 1), "no_0_90" = c(NA, w90 - 1))
-long <- ccw_clone(cohort, strategies, n_time = K, covariates = covs)
-formulas <- list(
-  no_init = ~ age + female + renal + time + I(time^2),
-  grace_end = ~ age + female + renal
-)
-w <- fit_censoring_model(long, formulas, stabilized = TRUE)
+# 1. Data and base censoring model (as in analysis/03) -------------------------
+wc <- wc_prepare(delta = 10, horizon = 180)
+long <- wc$long
+covs <- wc$covs
+feats <- wc$feats
+strategies <- wc$strategies
+K <- wc$K
+w30 <- wc$w30
+w90 <- wc$w90
+w <- fit_censoring_model(long, wc$formulas$base, stabilized = TRUE)
 
 # base model: individual bootstrap of the weighted RRB
 for (sc in c("cumulative", "interval")) {
   t0 <- Sys.time()
-  bt <- rrb_boot(w, covs, B = RRB_BOOT, scope = sc, seed = 20261018)
+  fs <- if (sc == "interval") feats else covs
+  bt <- rrb_boot(w, fs, B = RRB_BOOT, scope = sc, seed = 20261018)
   save_csv(bt, sprintf("wc_rrb_boot_%s.csv", sc))
-  cat(sprintf("rrb_boot (%s, B = %d): %.1f s\n", sc, RRB_BOOT,
-              as.numeric(difftime(Sys.time(), t0, units = "secs"))))
+  cat(sprintf("rrb_boot (%s, B = %d): %.1f s\n", sc, RRB_BOOT, secs(t0)))
 }
 
-# 2. Sensitivity model with race ----------------------------------------------
-formulas_race <- list(
-  no_init = ~ age + female + renal + race_black + race_other + time +
-    I(time^2),
-  grace_end = ~ age + female + renal + race_black + race_other
-)
-w_race <- fit_censoring_model(long, formulas_race, stabilized = TRUE)
-r_race <- rbind(
-  rrb(w_race, covs, method = c("unweighted", "weighted")),
-  rrb(w_race, covs, method = c("unweighted", "weighted"),
-      scope = "cumulative")
-)
-save_csv(r_race, "wc_race_rrb.csv")
-ws_race <- weight_support(w_race)
-save_csv(ws_race, "wc_race_weight_support.csv")
-t0 <- Sys.time()
-nr_race <- rrb_null(w_race, covs, n_draws = N_DRAWS, seed = 20260925)
-cat(sprintf("rrb_null (race model, %d draws): %.1f s\n", N_DRAWS,
-            as.numeric(difftime(Sys.time(), t0, units = "secs"))))
-save_csv(nr_race$maxib, "wc_race_null_maxib.csv")
-save_csv(nr_race$cells, "wc_race_null_cells.csv")
-
-# 180-day risks and risk differences with the bootstrap of analysis/03
+# 2. Diagnostics and estimates per censoring model ----------------------------
 rd <- function(e) {
   r <- stats::setNames(e$risk[e$time == max(e$time)],
                        as.character(e$strategy[e$time == max(e$time)]))
-  c(rd_0_90_vs_0_30 = r[["0_90"]] - r[["0_30"]],
-    rd_30_90_vs_0_30 = r[["30_90"]] - r[["0_30"]])
+  c(rd_0_90_vs_0_30 = r[["0_90"]] - r[["0_30"]])
 }
+# 180-day risks and risk difference with the individual bootstrap of
+# analysis/03 (same seed, hence the same resamples for every model)
 estimates <- function(wf, fml) {
   est <- estimate_risk(wf)
   risk_h <- est[est$time == K - 1, c("strategy", "risk")]
   rd_hat <- rd(est)
   set.seed(20260923)
   boot <- t(vapply(seq_len(N_BOOT), function(b) {
-    s <- sample(cohort$id, replace = TRUE)
-    cb <- cohort[s, ]
-    cb$id <- seq_len(nrow(cb))
-    lb <- ccw_clone(cb, strategies, n_time = K, covariates = covs)
+    s <- sample(wc$cohort$id, replace = TRUE)
+    lb <- wc_boot_long(wc, s)
     wb <- suppressWarnings(fit_censoring_model(lb, fml))
     eb <- estimate_risk(wb)
     c(stats::setNames(eb$risk[eb$time == K - 1],
                       as.character(eb$strategy[eb$time == K - 1])), rd(eb))
-  }, numeric(6)))
+  }, numeric(4)))
   tab <- data.frame(
     quantity = c(paste0("risk_", names(strategies)), names(rd_hat)),
     estimate = c(risk_h$risk, rd_hat),
@@ -139,60 +109,143 @@ estimates <- function(wf, fml) {
   tab$ucl <- tab$estimate + 1.96 * tab$boot_se
   tab
 }
-est_race <- estimates(w_race, formulas_race)
-save_csv(est_race, "wc_race_estimates.csv")
-cat(sprintf("\nRace model: 180-day risks and risk differences (B = %d):\n",
-            N_BOOT))
-print(est_race, digits = 3, row.names = FALSE)
-# base model, identical to analysis/03's wc_estimates.csv (same seed)
-est_base <- estimates(w, formulas)
+run_model <- function(m, save = TRUE) {
+  t0 <- Sys.time()
+  fml <- wc$formulas[[m]]
+  wm <- if (m == "base") w else fit_censoring_model(long, fml,
+                                                     stabilized = TRUE)
+  r <- rbind(
+    rrb(wm, feats, method = c("unweighted", "weighted")),
+    rrb(wm, covs, method = c("unweighted", "weighted"), scope = "cumulative")
+  )
+  ws <- weight_support(wm)
+  nr <- rrb_null(wm, feats, n_draws = N_DRAWS, seed = 20260925)
+  est <- estimates(wm, fml)
+  if (save) {
+    save_csv(r, sprintf("wc_%s_rrb.csv", m))
+    save_csv(ws, sprintf("wc_%s_weight_support.csv", m))
+    save_csv(nr$maxib, sprintf("wc_%s_null_maxib.csv", m))
+    save_csv(nr$maxib_stud, sprintf("wc_%s_null_maxib_stud.csv", m))
+    save_csv(nr$cells, sprintf("wc_%s_null_cells.csv", m))
+    save_csv(est, sprintf("wc_%s_estimates.csv", m))
+  }
+  cat(sprintf("model %s (null %d draws, bootstrap B = %d): %.1f s\n", m,
+              N_DRAWS, N_BOOT, secs(t0)))
+  list(r = r, ws = ws, nr = nr, est = est)
+}
+model_names <- c("base", "race", "use", "full")
+# base model: outputs already written by analysis/03 and 03b (identical)
+res <- lapply(stats::setNames(model_names, model_names), function(m) {
+  run_model(m, save = m != "base")
+})
 
-# 3. Comparison base vs race model --------------------------------------------
-r_base <- rbind(
-  rrb(w, covs, method = "weighted"),
-  rrb(w, covs, method = "weighted", scope = "cumulative")
-)
-pick_rrb <- function(r, sc, g, tt, f = "race_other") {
+# 3. Comparison table ---------------------------------------------------------
+last_t <- c("0_30" = w30 - 1, "0_90" = w90 - 1, "no_0_90" = w90 - 1)
+pick_rrb <- function(r, sc, g, tt, f) {
   v <- r$rrb[r$method == "weighted" & r$scope == sc &
                as.character(r$strategy) == g & r$time == tt & r$feature == f]
   if (length(v) == 1) v else NA_real_
 }
-ess_min <- function(ws, tt) min(ws$ess_ratio[ws$time == tt], na.rm = TRUE)
-models <- list(base = list(r = r_base, ws = weight_support(w), est = est_base),
-               race = list(r = r_race, ws = ws_race, est = est_race))
+pick_maxib <- function(nr, f, col) {
+  nr$maxib[[col]][nr$maxib$strategy == "(all)" & nr$maxib$feature == f]
+}
+pick_stud <- function(nr, f, col) {
+  nr$maxib_stud[[col]][nr$maxib_stud$strategy == "(all)" &
+                         nr$maxib_stud$feature == f]
+}
+pick_est <- function(est, q, col) est[[col]][est$quantity == q]
+row <- function(label, fun) {
+  cbind(data.frame(quantity = label),
+        as.data.frame(lapply(res, fun)))
+}
 rows <- list()
-for (g in c("0_90", "30_90")) {
-  rows[[length(rows) + 1]] <- data.frame(
-    quantity = sprintf("interval RRB race_other, %s, time 8 (day 90)", g),
-    base = pick_rrb(models$base$r, "interval", g, w90 - 1),
-    race = pick_rrb(models$race$r, "interval", g, w90 - 1))
+for (f in feats) {
+  rows[[length(rows) + 1]] <- row(
+    sprintf("interval RRB %s, 0_30, time %d (day 30)", f, w30 - 1),
+    function(x) pick_rrb(x$r, "interval", "0_30", w30 - 1, f))
+  rows[[length(rows) + 1]] <- row(
+    sprintf("interval RRB %s, 0_90, time %d (day 90)", f, w90 - 1),
+    function(x) pick_rrb(x$r, "interval", "0_90", w90 - 1, f))
 }
 for (g in names(strategies)) {
-  rows[[length(rows) + 1]] <- data.frame(
-    quantity = sprintf("cumulative RRB race_other, %s, time %d (horizon)", g,
-                       K - 1),
-    base = pick_rrb(models$base$r, "cumulative", g, K - 1),
-    race = pick_rrb(models$race$r, "cumulative", g, K - 1))
+  rows[[length(rows) + 1]] <- row(
+    sprintf("cumulative RRB race_other, %s, time %d (grace end)", g,
+            last_t[[g]]),
+    function(x) pick_rrb(x$r, "cumulative", g, last_t[[g]], "race_other"))
 }
-rows[[length(rows) + 1]] <- data.frame(
-  quantity = "smallest ESS/N at time 8 (over strategies)",
-  base = ess_min(models$base$ws, w90 - 1),
-  race = ess_min(models$race$ws, w90 - 1))
-for (q in c("rd_0_90_vs_0_30", "rd_30_90_vs_0_30")) {
-  for (v in c("estimate", "boot_se")) {
-    rows[[length(rows) + 1]] <- data.frame(
-      quantity = paste(q, v),
-      base = models$base$est[[v]][models$base$est$quantity == q],
-      race = models$race$est[[v]][models$race$est$quantity == q])
+for (f in c(feats, "(all)")) {
+  lab <- if (f != "(all)") sprintf("MaxIB %s (all strategies)", f) else
+    "MaxIB all features and strategies"
+  for (col in c("maxib_obs", "null_q95", "p")) {
+    rows[[length(rows) + 1]] <- row(
+      paste(lab, sub("maxib_obs", "observed", col)),
+      function(x) pick_maxib(x$nr, f, col))
+  }
+}
+rows[[length(rows) + 1]] <- row(
+  "smallest ESS/|R| at time 8 (over strategies)",
+  function(x) min(x$ws$ess_ratio[x$ws$time == w90 - 1], na.rm = TRUE))
+rows[[length(rows) + 1]] <- row(
+  "ESS/|R| at time 8, 0_90",
+  function(x) x$ws$ess_ratio[x$ws$time == w90 - 1 &
+                               x$ws$strategy == "0_90"])
+rows[[length(rows) + 1]] <- row(
+  "w99 at time 8, 0_90",
+  function(x) x$ws$w99[x$ws$time == w90 - 1 & x$ws$strategy == "0_90"])
+for (g in names(strategies)) {
+  q <- paste0("risk_", g)
+  rows[[length(rows) + 1]] <- row(paste(q, "(180 d)"),
+                                  function(x) pick_est(x$est, q, "estimate"))
+}
+q <- "rd_0_90_vs_0_30"
+for (col in c("estimate", "boot_se", "lcl", "ucl")) {
+  rows[[length(rows) + 1]] <- row(paste(q, col),
+                                  function(x) pick_est(x$est, q, col))
+}
+# studentised maximum (appended after the existing rows)
+for (f in c(feats, "(all)")) {
+  lab <- if (f != "(all)") {
+    sprintf("Studentised max %s (all strategies)", f)
+  } else {
+    "Studentised max all features and strategies"
+  }
+  for (col in c("stud_obs", "null_q95", "p")) {
+    rows[[length(rows) + 1]] <- row(
+      paste(lab, sub("stud_obs", "observed", col)),
+      function(x) pick_stud(x$nr, f, col))
   }
 }
 cmp <- do.call(rbind, rows)
-save_csv(cmp, "wc_race_comparison.csv")
-cat("\nBase model (age, sex, renal) vs race model",
-    "(+ race_black, race_other):\n")
+rownames(cmp) <- NULL
+save_csv(cmp, "wc_model_comparison.csv")
+cat("\nCensoring models: base (age, sex, renal), race (+ race_black,",
+    "race_other),\nuse (+ visit, outpt, fill), full (+ race and use):\n")
 print(cmp, digits = 3, row.names = FALSE)
-cat("\nRace model, null reference MaxIB (observed vs conditional null):\n")
-print(nr_race$maxib[nr_race$maxib$feature %in% c("race_other", "(all)"), ],
-      digits = 3, row.names = FALSE)
-cat(sprintf("\nTotal runtime: %.1f s\n",
-            as.numeric(difftime(Sys.time(), t_start, units = "secs"))))
+
+cat("\nWeighted interval RRB at the grace ends (0_30 time 2, 0_90 time 8):\n")
+for (m in model_names) {
+  r <- res[[m]]$r
+  ge <- r[r$scope == "interval" & r$method == "weighted" &
+            ((r$strategy == "0_30" & r$time == w30 - 1) |
+               (r$strategy == "0_90" & r$time == w90 - 1)), ]
+  tab <- stats::xtabs(rrb ~ feature + strategy, data = ge,
+                      drop.unused.levels = TRUE)
+  cat("--", m, "\n")
+  print(round(unclass(tab)[feats, c("0_30", "0_90")], 3))
+}
+stud_feats <- c("fill", wc$depth, "race_other", "outpt", "(all)")
+for (m in model_names) {
+  cat(sprintf("\nModel %s: null reference MaxIB (all strategies):\n", m))
+  nr <- res[[m]]$nr
+  print(nr$maxib[nr$maxib$strategy == "(all)", ], digits = 3,
+        row.names = FALSE)
+  cat(sprintf("Model %s: studentised maximum max|z| (selected functions):\n",
+              m))
+  print(nr$maxib_stud[nr$maxib_stud$feature %in% stud_feats, ], digits = 3,
+        row.names = FALSE)
+  big <- nr$cells[!is.na(nr$cells$z) & abs(nr$cells$z) > 2, ]
+  cat("cells with |z| > 2:\n")
+  print(big[, c("strategy", "time", "feature", "n_censored", "rrb_obs",
+                "null_sd", "z", "p_two")], digits = 3, row.names = FALSE)
+}
+cat(sprintf("\nTotal runtime: %.1f s\n", secs(t_start)))

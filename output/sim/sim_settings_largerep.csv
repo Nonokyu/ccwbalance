@@ -1,2 +1,2 @@
 "RUN","N_REPS","N_BOOT","N_NULL_DRAWS","N_MC","N_CORES","n_tasks","n_failed","runtime_min"
-"largerep","correct_1000=1000;correct_n300_1000=1000;correct_n8000_500=500;early_events=200;omit_L_ss_trunc=200;omit_L_ss_nearpos=200","correct_1000=500;correct_n300_1000=500;correct_n8000_500=200;early_events=100;omit_L_ss_trunc=100;omit_L_ss_nearpos=100",500,5e+05,40,3100,0,164.49
+"largerep","correct_1000=1000;correct_n300_1000=1000;correct_n8000_500=500;early_events=200;omit_L_ss_trunc=200;omit_L_ss_nearpos=200","correct_1000=500;correct_n300_1000=500;correct_n8000_500=200;early_events=100;omit_L_ss_trunc=100;omit_L_ss_nearpos=100",500,5e+05,40,3100,0,174.65

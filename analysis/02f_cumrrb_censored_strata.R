@@ -1,7 +1,8 @@
 # 02f_cumrrb_censored_strata.R ------------------------------------------------
 # Cumulative RRB of the baseline functions (X, L_0) summarised over the strata
 # with artificial censoring (strategy x interval with at least one
-# artificially censored individual; g1, g3), the same strata as interval RRB.
+# artificially censored individual; g1, g2, g3), the same strata as interval
+# RRB.
 # 02_simulation_study.R took the cumulative-RRB maximum over every interval
 # from the first artificial censoring to the end of follow-up. Without loss to
 # follow-up the two maxima coincide, because the weights do not change after
@@ -16,6 +17,11 @@
 # largerep). It checks that the old maximum equals cumrrb_base_maxib in
 # output/sim/sim_results_main.csv. The column `scenario` of the outputs holds
 # the run-main scenario names.
+#
+# Strategies as in 02_simulation_study.R (g2 is the nested longer window
+# with artificial censoring only at t = w2 - 1). The saved
+# sim_results_main.csv predates the g2 redesign; the stored-value check
+# (stopifnot below) holds again only after the run main is redone.
 #
 # Inputs:  output/sim/sim_results_main.csv
 # Outputs: output/sim/sim_paper_cumrrb_censored_strata.csv (per replicate),
@@ -34,8 +40,7 @@ SEED_OFFSET_MAIN <- 3
 SEED <- 20260923
 N_MC <- 5e5
 N_SUBJ <- 2000
-CONTRAST <- c("g3", "g1")
-DIAG_STRATEGIES <- c("g1", "g3")
+DIAG_STRATEGIES <- c("g1", "g2", "g3")
 base_feats <- c("X", "L_base")
 n_cores <- as.numeric(Sys.getenv("CCW_CORES",
                                  max(1, parallel::detectCores() - 1)))

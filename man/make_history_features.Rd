@@ -2,7 +2,7 @@
 % Please edit documentation in R/features.R
 \name{make_history_features}
 \alias{make_history_features}
-\title{Build history features f(H_k)}
+\title{Build history features f(H_t) for balance diagnostics}
 \usage{
 make_history_features(
   data,
@@ -16,36 +16,35 @@ make_history_features(
 )
 }
 \arguments{
-\item{data}{Long data (see \link{ccwbalance-package}).}
+\item{data}{Long clone data.}
 
 \item{vars}{Time-varying covariates to transform.}
 
-\item{thresholds}{Numeric vector of cut-offs \code{c} for \code{I(L_k > c)}.}
+\item{thresholds}{Numeric vector of cut-offs \code{c} for \code{I(L_t > c)}.}
 
 \item{interactions}{List of character pairs, e.g. \code{list(c("L", "X"))}.}
 
-\item{baseline}{Add \verb{<v>_base}, the value of \verb{<v>} in the first row of the
-individual under the strategy?}
+\item{baseline}{Add \verb{<v>_base}, the value of \verb{<v>} at the clone's first
+time (baseline-fixed feature)?}
 
 \item{id, strategy, time}{Column names.}
 }
 \value{
-\code{data}, sorted by strategy, individual and interval, with added
-columns \verb{<v>_sq}, \verb{<v>_lagprod}, \verb{<v>_diff}, \verb{<v>_cummean}, \verb{<v>_gt<c>},
-\verb{<v>_base} and \verb{<a>_x_<b>}.
+\code{data} with added columns \verb{<v>_sq}, \verb{<v>_lagprod}, \verb{<v>_diff},
+\verb{<v>_cummean}, \verb{<v>_gt<c>}, \verb{<v>_base} and \verb{<a>_x_<b>}.
 }
 \description{
-Adds transformed history features \code{f(H_k)} for the diagnostics: squares
-\code{L_k^2}, lag products \verb{L_k L_\{k-1\}}, differences \verb{L_k - L_\{k-1\}},
-cumulative means, threshold indicators \code{I(L_k > c)}, baseline values
-\code{L_0} and pairwise interactions. Baseline values are baseline-fixed, so
-their cumulative RRB is zero-targeted (see \code{\link[=rrb]{rrb()}}).
+Adds transformed history features used as \code{f(H_t)} in the reconstruction
+diagnostics: squares \code{L_t^2}, lag products \verb{L_t L_\{t-1\}}, differences
+\verb{Delta L_t = L_t - L_\{t-1\}}, cumulative means, threshold indicators
+\code{I(L_t > c)}, baseline values \code{L_0} (for cumulative RRB, which is
+0-targeted only for baseline-fixed features) and pairwise interactions.
 }
 \details{
-Lags are taken within individual x strategy after ordering by \code{time}. An
-existing column \verb{<v>_lag} (as returned by \code{\link[=simulate_ccw]{simulate_ccw()}}) is used as
-\verb{L_\{k-1\}}; otherwise the lag is computed and set to the current value in
-the first row, so that \verb{L_0 - L_\{-1\} = 0}.
+Lags are computed within clone (\code{id} x \code{strategy}) after ordering by time.
+If a \verb{<var>_lag} column already exists (as produced by \code{\link[=simulate_ccw]{simulate_ccw()}}) it
+is used as \verb{L_\{t-1\}}; otherwise the lag is computed and, at the first row,
+set equal to the current value (so \verb{Delta L_0 = 0}).
 }
 \examples{
 d <- simulate_ccw(ccw_sim_params(n = 100), seed = 1)

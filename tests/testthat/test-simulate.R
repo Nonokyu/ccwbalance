@@ -37,13 +37,46 @@ test_that("true_risk_ccw returns one risk per strategy", {
   expect_true(all(tr$risk > 0 & tr$risk < 1))
 })
 
-test_that("default DGM (n_extra = 0) is unchanged (regression values)", {
+test_that("default DGM regression values (g2 = nested window)", {
+  # g1 and g3 paths predate the nested-g2 redesign. The g1 risk keeps its
+  # pre-redesign value 0.1158; the g3 path is unchanged but runs after g2 in
+  # one RNG stream (pre-redesign value 0.2168), so its Monte Carlo value
+  # moves because the new g2 regime consumes fewer random numbers.
   d <- simulate_ccw(ccw_sim_params(n = 200), seed = 1)
-  expect_equal(nrow(d), 3741)
-  expect_equal(sum(d$X * d$L * d$time), 6015.73808597564, tolerance = 1e-8)
+  expect_equal(nrow(d), 4404)
+  expect_equal(sum(d$X * d$L * d$time), 7334.85215549933, tolerance = 1e-8)
   expect_false(any(grepl("^X[0-9]+$", names(d))))
   tr <- true_risk_ccw(ccw_sim_params(), n_mc = 5000, seed = 7)
-  expect_equal(tr$risk, c(0.1158, 0.1640, 0.2168), tolerance = 1e-12)
+  expect_equal(tr$risk, c(0.1158, 0.1400, 0.2248), tolerance = 1e-12)
+})
+
+test_that("g2 is the nested longer window containing g1", {
+  p <- ccw_sim_params(n = 300)
+  w1 <- p$window[1]
+  w2 <- p$window[2]
+  d <- simulate_ccw(p, seed = 1)
+  g1 <- d[d$strategy == "g1", ]
+  g2 <- d[d$strategy == "g2", ]
+  # (a) g2 has no "no_init" phase; grace end only at w2 - 1
+  expect_true(all(g2$phase %in% c("grace_end", "none")))
+  expect_true(all(g2$time[g2$phase == "grace_end"] == w2 - 1))
+  expect_true(all(g2$censored_next[g2$time < w2 - 1] == 0))
+  # (b) every g1 row up to w1 - 1 also exists in g2
+  k1 <- paste(g1$id, g1$time)[g1$time <= w1 - 1]
+  expect_true(all(k1 %in% paste(g2$id, g2$time)))
+  # (c) clones censored from g1 for non-initiation stay at risk in g2 at w1
+  #     unless they had the outcome or LTFU by then
+  cen1 <- g1$id[g1$censored_next == 1 & g1$phase == "grace_end"]
+  expect_gt(length(cen1), 0)
+  gone <- g2$id[g2$time <= w1 - 1 &
+                  (g2$ltfu_next %in% 1 | g2$event_next %in% 1)]
+  still <- setdiff(cen1, gone)
+  expect_gt(length(still), 0)
+  expect_true(all(still %in% g2$id[g2$time == w1]))
+  # (d) treatment is protective (gamma2 < 0): longer window, higher risk
+  tr <- true_risk_ccw(ccw_sim_params(), n_mc = 5000, seed = 7)
+  expect_lt(tr$risk[1], tr$risk[2])
+  expect_lt(tr$risk[2], tr$risk[3])
 })
 
 test_that("extra correlated baseline covariates are added", {

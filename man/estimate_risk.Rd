@@ -2,7 +2,7 @@
 % Please edit documentation in R/weights.R
 \name{estimate_risk}
 \alias{estimate_risk}
-\title{Weighted discrete-time risk by strategy}
+\title{Weighted discrete-time risk estimate by strategy}
 \usage{
 estimate_risk(
   data,
@@ -15,21 +15,20 @@ estimate_risk(
 )
 }
 \arguments{
-\item{data}{Long data with weights (see \code{\link[=fit_censoring_model]{fit_censoring_model()}}).}
+\item{data}{Weighted long clone data.}
 
-\item{weight}{Weight column; \code{NULL} for unweighted.}
+\item{weight}{Weight column (\code{NULL} for unweighted).}
 
-\item{strategy, time, censored, event, ltfu}{Column names (\code{ltfu} is ignored
-if \code{NULL} or absent).}
+\item{strategy, time, censored, event, ltfu}{Column names (\code{ltfu} may be
+\code{NULL}).}
 }
 \value{
-A data frame with \verb{strategy, time, hazard, risk}.
+Data frame with \verb{strategy, time, hazard, risk}.
 }
 \description{
-Weighted Kaplan-Meier-type estimator. The hazard of interval \code{k} is the
-weighted proportion of outcomes among the rows retained in interval \code{k}
-(\code{D_k = 0} and, if \code{ltfu} is present, not lost to follow-up), and the
-risk by the end of interval \code{k} is \verb{1 - prod_\{l <= k\} (1 - h_l)}.
+Weighted Kaplan-Meier-type estimator: the interval hazard is the weighted
+proportion of events among clones retained (not artificially censored and
+not lost to follow-up) in \verb{[t, t+1)}; risk is \code{1 - prod(1 - h_t)}.
 }
 \examples{
 d <- simulate_ccw(ccw_sim_params(n = 300), seed = 1)

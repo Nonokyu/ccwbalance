@@ -2,28 +2,28 @@
 % Please edit documentation in R/simulate.R
 \name{true_risk_ccw}
 \alias{true_risk_ccw}
-\title{True risk under each simulated strategy}
+\title{True counterfactual risk under each CCW strategy}
 \usage{
 true_risk_ccw(params = ccw_sim_params(), n_mc = 2e+05, seed = NULL)
 }
 \arguments{
-\item{params}{Parameter list from \code{\link[=ccw_sim_params]{ccw_sim_params()}}; \code{n} is replaced by
+\item{params}{Parameter list from \code{\link[=ccw_sim_params]{ccw_sim_params()}}; \code{n} is overridden by
 \code{n_mc}.}
 
 \item{n_mc}{Monte Carlo sample size.}
 
-\item{seed}{Optional random seed.}
+\item{seed}{Optional seed.}
 }
 \value{
 A data frame with \code{strategy} and \code{risk}.
 }
 \description{
-Monte Carlo evaluation of the risk of the outcome by the end of interval
-\code{n_time - 1} under the regimes identified by the weighted analysis of
-\code{\link[=simulate_ccw]{simulate_ccw()}} data, without loss to follow-up: natural initiation
-within the window with initiation forced in its last interval (\code{g1};
-\code{g2}, which also prevents initiation before \code{w1}), or no initiation up
-to interval \code{w2 - 1} (\code{g3}).
+Monte Carlo evaluation of the risk \verb{P(Y by n_time)} under the regimes
+identified by the CCW/IPCW analysis of \code{\link[=simulate_ccw]{simulate_ccw()}} data: natural
+initiation inside the grace window with forced initiation in the last
+window interval (\code{g1}: forced initiation at \code{w1 - 1}; \code{g2} is the nested
+longer window, forced initiation at \code{w2 - 1}), or no initiation up to
+\code{w2 - 1} (\code{g3}). No loss to follow-up.
 }
 \examples{
 true_risk_ccw(ccw_sim_params(), n_mc = 2000, seed = 1)

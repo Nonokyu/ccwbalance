@@ -2,7 +2,7 @@
 % Please edit documentation in R/balance.R
 \name{mahalanobis_rr}
 \alias{mahalanobis_rr}
-\title{Mahalanobis reconstruction balance (M^RR)}
+\title{Mahalanobis global reconstruction balance (M^RR)}
 \usage{
 mahalanobis_rr(
   data,
@@ -24,9 +24,9 @@ mahalanobis_rr(
 )
 }
 \arguments{
-\item{data}{Long data with weights (see \code{\link[=fit_censoring_model]{fit_censoring_model()}}).}
+\item{data}{Long clone data with weights (see \code{\link[=fit_censoring_model]{fit_censoring_model()}}).}
 
-\item{features}{Character vector of feature columns \code{f(H_k)}.}
+\item{features}{Character vector of feature columns \code{f(H_t)}.}
 
 \item{method}{One or more of \code{"weighted"}, \code{"unweighted"},
 \code{"unstabilized"}, \code{"stabilized"}.}
@@ -38,26 +38,26 @@ mahalanobis_rr(
 \item{strategy, time, censored}{Column names.}
 
 \item{w_ref, w_post, pi_hat, q_hat, w_prev_unstab, w_prev_stab}{Weight column
-names (see \code{\link[=fit_censoring_model]{fit_censoring_model()}}).}
+names.}
 
-\item{event}{Outcome column used to carry individuals with the outcome
-forward (cumulative scope).}
+\item{event}{Outcome column used to carry event clones forward in the
+cumulative scope.}
 
-\item{carry_events}{Carry individuals with the outcome forward
-(cumulative scope)?}
+\item{carry_events}{Carry forward clones with the outcome (cumulative
+scope)?}
 }
 \value{
 A data frame with \verb{strategy, time, method, scope, n_risk, n_censored, n_features, mahalanobis}.
 }
 \description{
-\deqn{M^{RR}_g(k) = \Delta_g(k)^\top \Sigma_{g,k}^{-1} \Delta_g(k),}
-where \code{Delta_g(k)} is the vector of differences between the post and
-reference means of the features and \verb{Sigma_\{g,k\}} the reference-weighted
-covariance matrix of the reference set (sets and methods as in \code{\link[=rrb]{rrb()}}).
-Features with reference variance below \code{1e-10} in a stratum are dropped
-there. With \code{ridge > 0}, \code{Sigma + ridge * mean(diag(Sigma)) * I} is
-inverted. In the cumulative scope the target is 0 only when all features
-are baseline-fixed.
+\deqn{M^{RR}_g(t) = \Delta_g(t)^\top \Sigma^{-1}_{g,t,ref} \Delta_g(t),
+  \quad \Delta_g(t) = \mu^{post,w}_g(t) - \mu^{pre}_g(t),}
+where \code{Sigma} is the reference-weighted covariance of the reference set
+(see \code{\link[=rrb]{rrb()}} for the \code{"interval"} / \code{"cumulative"} scopes). Features with
+(near) zero reference variance at a given time are dropped. Optional ridge
+regularisation uses \code{Sigma + ridge * mean(diag(Sigma)) * I}. In the
+cumulative scope the metric is 0-targeted only when all features are
+baseline-fixed.
 }
 \examples{
 d <- simulate_ccw(ccw_sim_params(n = 300), seed = 1)

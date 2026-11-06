@@ -35,11 +35,11 @@ test_that("estimate_risk returns monotone risks", {
 
 test_that("fit_censoring_model accepts a named list of formulas", {
   d <- simulate_ccw(ccw_sim_params(n = 400), seed = 5)
-  fl <- list(no_init = ~ L + X, grace_end = ~ X, "g3.no_init" = ~ 1)
+  fl <- list(no_init = ~ L + X, grace_end = ~ X, "g2.grace_end" = ~ 1)
   w <- fit_censoring_model(d, fl)
   m <- attr(w, "models")
-  expect_equal(names(coef(m[["g3.no_init"]]$denominator)), "(Intercept)")
-  expect_equal(names(coef(m[["g2.no_init"]]$denominator)),
+  expect_equal(names(coef(m[["g2.grace_end"]]$denominator)), "(Intercept)")
+  expect_equal(names(coef(m[["g3.no_init"]]$denominator)),
                c("(Intercept)", "L", "X"))
   expect_equal(names(coef(m[["g1.grace_end"]]$denominator)),
                c("(Intercept)", "X"))

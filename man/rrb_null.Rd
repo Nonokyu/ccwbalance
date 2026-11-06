@@ -2,8 +2,8 @@
 % Please edit documentation in R/null.R
 \name{rrb_null}
 \alias{rrb_null}
-\title{Conditional parametric null reference for interval RRB and censoring
-balance}
+\title{Conditional parametric null reference for interval RRB, censoring balance
+and their maxima}
 \usage{
 rrb_null(
   data,
@@ -25,10 +25,10 @@ rrb_null(
 )
 }
 \arguments{
-\item{data}{Long data returned by \code{\link[=fit_censoring_model]{fit_censoring_model()}}; its
-\code{"weighting"} attribute supplies \code{formula} and \code{by} unless given.}
+\item{data}{Long clone data returned by \code{\link[=fit_censoring_model]{fit_censoring_model()}} (the
+\code{"weighting"} attribute supplies \code{formula} and \code{by} unless given).}
 
-\item{features}{Character vector of feature columns \code{f(H_k)}.}
+\item{features}{Character vector of feature columns \code{f(H_t)}.}
 
 \item{n_draws}{Number of null draws.}
 
@@ -36,115 +36,167 @@ rrb_null(
 
 \item{strategy, time, censored, censor_possible, pi_hat, w_ref}{Column names.}
 
-\item{by}{Model-group columns (default: those of \code{\link[=fit_censoring_model]{fit_censoring_model()}},
-else \code{c(strategy, "phase")}).}
+\item{by}{Model-group columns (default: those used by
+\code{\link[=fit_censoring_model]{fit_censoring_model()}}, else \code{c("strategy", "phase")}).}
 
-\item{formula}{Censoring-model formula or named list of formulas
-(default: the one of \code{\link[=fit_censoring_model]{fit_censoring_model()}}).}
+\item{formula}{Censoring-model formula or named list of formulas (default:
+the one used by \code{\link[=fit_censoring_model]{fit_censoring_model()}}).}
 
-\item{pi_floor}{Lower bound applied to the refitted \verb{pi*_k}.}
+\item{pi_floor}{Lower bound applied to refitted \verb{pi*}.}
 
-\item{coupling}{\code{"individual"} (default) or \code{"independent"}; see
-Coupling.}
+\item{coupling}{How censoring indicators are redrawn: \code{"individual"}
+(default; clones of one individual at one time share a uniform variate,
+see Within-individual dependence) or \code{"independent"} (one independent
+Bernoulli draw per censorable row).}
 
-\item{id}{Individual identifier column (used by
-\code{coupling = "individual"}).}
+\item{id}{Individual identifier column (used by \code{coupling = "individual"}).}
 
-\item{treatment}{Binary treatment column \code{A_k} used to orient the
-coupling; if absent the phase rule is used.}
+\item{treatment}{Binary treatment column \code{A_t} used to orient the coupling
+(\code{coupling = "individual"}); if absent the phase rule is used.}
 }
 \value{
-An object of class \code{"rrb_null"}, a list with
+An object of class \code{"rrb_null"}: a list with
 \itemize{
-\item \code{cells}: one row per cell with \verb{strategy, time, feature, n_risk, n_censored, rrb_obs, null_mean, null_sd, null_q025, null_q975, z, p_two}, where \code{z = rrb_obs / null_sd} and
-\verb{p_two = (1 + #\{|RRB*| >= |RRB_obs|\}) / (1 + n_draws)}, followed by
-\verb{cb_obs, cb_null_mean, cb_null_sd, cb_z, cb_p_two}, the same
-summaries for CB (\code{NA} where the observed CB is undefined);
-\item \code{maxib}: MaxIB of interval RRB per strategy x feature, per strategy,
-per feature and overall (\code{"(all)"} labels), with \verb{n_cells, maxib_obs, null_mean, null_q95, p}, where
+\item \code{cells}: \verb{strategy, time, feature, n_risk, n_censored, rrb_obs, null_mean, null_sd, null_q025, null_q975, z, p_two}, where
+\code{z = rrb_obs / null_sd} and \code{p_two} is the two-sided exceedance
+probability \verb{(1 + #\{|RRB*| >= |RRB_obs|\}) / (1 + n_draws)};
+\item \code{maxib}: MaxIB per strategy x feature, per strategy (all features),
+per feature (all strategies) and overall (\code{"(all)"} labels), with
+\verb{n_cells, maxib_obs, null_mean, null_q95, p} where
 \verb{p = (1 + #\{MaxIB* >= MaxIB_obs\}) / (1 + n_draws)};
-\item \code{maxib_cb}: as \code{maxib}, for CB;
-\item \code{draws}: long data frame \verb{draw, strategy, time, feature, rrb, cb};
+\item \code{cells} also holds \verb{cb_obs, cb_null_mean, cb_null_sd, cb_z, cb_p_two}: the same summaries for the censoring balance (CB, see
+Censoring balance; \code{NA} where the observed CB is undefined);
+\item \code{maxib_cb}: as \code{maxib}, for the censoring balance (\code{n_cells} counts
+the cells with a defined observed CB);
+\item \code{maxib_stud}, \code{maxib_cb_stud}: the studentised maximum for the same
+pooling levels as \code{maxib} / \code{maxib_cb}. Every cell's observed value
+and draws are divided by the cell's null SD (\code{null_sd} /
+\code{cb_null_sd}, estimated from the same draws); cells whose null SD is
+\code{NA} or not positive are left out (\code{n_excluded}). Columns
+\verb{n_cells, n_excluded, stud_obs, null_mean, null_q95, p}, with
+\code{stud_obs} the maximum of \verb{|z|} (\verb{|cb_z|}) over the included cells
+and \code{p} defined as for \code{maxib};
+\item the censorable-row censoring balance (see Censoring balance), from
+the same draws: \code{cells} columns \verb{cb_cens_obs, cb_cens_null_mean, cb_cens_null_sd, cb_cens_z, cb_cens_p_two} and the maxima
+\code{maxib_cb_cens} (as \code{maxib_cb}) and \code{maxib_cb_cens_stud} (as
+\code{maxib_cb_stud});
+\item \code{draws}: long data frame \verb{draw, strategy, time, feature, rrb, cb, cb_cens} of the null draws;
 \item \code{n_draws}.
 }
 }
 \description{
 Even under a correctly specified censoring model the interval RRB of a
 finite sample is not exactly 0: its signed value is centred at 0, but its
-absolute value and its maximum over strata (MaxIB) are positive, of order
-\code{ESS^{-1/2}}. \code{rrb_null()} gives the distribution of the interval RRB,
-the censoring balance (CB) and their maxima that would arise if the
-fitted censoring model were true, so that observed values can be judged
-against calibrated thresholds.
+absolute value and the maximum over cells (MaxIB) are positive, of order
+\code{ESS^{-1/2}}. \code{rrb_null()} builds a null reference that says how large the
+interval RRB and MaxIB would be if the fitted censoring model were the true
+one, so that observed values can be judged against it (calibrated MaxIB
+thresholds and z-type statistics). The same draws give a null reference
+for the Jackson-type censoring balance (CB) of each cell, so that the
+proposed diagnostic and censoring balance can be judged on the same
+calibrated scale.
 }
 \details{
-\subsection{Construction}{
+\subsection{Construction (conditional parametric null)}{
 
-For each draw \verb{b = 1, ..., n_draws}:
+For \verb{b = 1, ..., n_draws}:
 \enumerate{
-\item on the rows where artificial censoring is possible, draw
-\verb{D*_k ~ Bernoulli(1 - pi_hat)} (other rows keep \verb{D*_k = 0}; see
-Coupling);
-\item refit the censoring model to \verb{D*_k} with the same formula(s) and model
-groups as \code{\link[=fit_censoring_model]{fit_censoring_model()}}, giving \verb{pi*_k};
-\item keep the observed reference weights \code{w_ref} (\verb{W_\{k-1\} q_k}) and give
-the rows retained under \verb{D*_k} the weight \verb{w_ref / pi*_k};
-\item compute the interval RRB and CB of every strategy x interval x
-feature cell.
+\item on rows where artificial censoring is possible, redraw the censoring
+indicator with \verb{P(D*_\{t+1\} = 1) = 1 - pi_hat} from the fitted model
+(rows where censoring is impossible keep \verb{D* = 0}). With the default
+\code{coupling = "individual"} the censorable rows of one individual at one
+time (\code{id} x \code{time}, i.e. the clones of that individual) share one
+uniform variate \code{U ~ Uniform(0, 1)}, and \code{U < P(A_t = 1 | H_t)} plays
+the role of the shared treatment event "treated in interval \code{t}". A row
+of a strategy x phase group that is censored on \code{A_t = 1} (where
+\code{P(A_t = 1) = 1 - pi_hat}) is censored iff \code{U < 1 - pi_hat}; a row of a
+group censored on \code{A_t = 0} (\code{P(A_t = 1) = pi_hat}) iff \code{U >= pi_hat}
+(see Within-individual dependence for how the orientation is found).
+With \code{coupling = "independent"} every censorable row gets its own
+Bernoulli draw;
+\item refit the censoring model to \verb{D*} with the same formula(s) and model
+groups (\code{by}) as \code{\link[=fit_censoring_model]{fit_censoring_model()}}, giving \verb{pi*};
+\item keep the reference weights \code{w_ref} (\verb{W_\{t-1\} q_t}) of the observed data
+fixed and give the clones retained under \verb{D*} the weight
+\verb{w_ref / pi*};
+\item compute the interval RRB \verb{RRB*} and the censoring balance \verb{CB*} of
+every strategy x time x feature cell.
+}
 }
 
-The observed values are computed in the same way from \code{D_k} and
-\code{pi_hat}: the observed RRB has post weight \code{w_ref / pi_hat}, the model
-weight of the current interval applied to the reference weights. With
-truncated weights it therefore differs from \code{rrb(method = "weighted")},
-which gives the estimator-weight RRB; without truncation the two agree.
-The CB of a cell is \code{(mu_C - mu_U) / s_R}, with censored rows weighted
-by \code{w_ref / (1 - pi)} (\code{1 - pi} floored at \code{1e-6}), retained rows by
-\code{w_ref / pi} and \code{s_R} the \code{w_ref}-weighted standard deviation of the
-stratum; without truncation the observed CB equals
-\code{censoring_balance(weighted = TRUE, weights = "model")}.
+\subsection{Censoring balance}{
 
-Only strata with at least one artificially censored row in the observed
-data are used, so the maxima are taken over the same cells in the data
-and in the draws. A cell without censored rows in a draw contributes
-\verb{RRB* = 0} and \verb{CB* = NA}; cells with an undefined observed value are
-left out of the maxima.
+The Jackson-type censoring balance of a cell is
+\code{CB = (mu_C - mu_K) / s_R}, where \code{mu_K} is the mean of \code{f(H_t)} among the
+retained rows (\code{D = 0}) weighted by \code{w_ref / pi}, \code{mu_C} the mean among the
+censored rows (\code{D = 1}) weighted by \code{w_ref / (1 - pi)} (with \code{1 - pi}
+floored at \code{1e-6}), and \code{s_R} the \code{w_ref}-weighted SD of \code{f(H_t)} over the
+whole cell (the RRB denominator). The observed CB uses \code{D} and \code{pi_hat}
+and equals \code{censoring_balance(weighted = TRUE, weights = "model")} (the
+common factor \code{q_t} of \code{w_ref} cancels within a cell, untruncated
+weights); \verb{CB*} uses \verb{D*} and \verb{pi*} of the same draw (no additional
+random numbers are drawn, so the RRB output does not depend on whether CB
+is computed). CB is undefined in a cell without censored rows, so such a
+cell contributes \verb{CB* = NA} in that draw (ignored by the maxima and the
+null summaries).
 
-The reference is conditional on the observed risk sets and reference
-weights: the redrawn censoring is not propagated to later risk sets or to
-\verb{W_\{k-1\}}. It is therefore defined for the interval scope only. It
-reflects the variability of the censoring indicators and of the
-censoring-model fit, but not that of the covariates or of the earlier
-weights.
+The censoring balance is returned for two row sets. The \verb{cb_*} elements
+use every row of the risk set. The \verb{cb_cens_*} elements use only the
+rows at which artificial censoring is possible (\code{censor_possible == TRUE}), so that rows that cannot be artificially censored (for example,
+individuals who already initiated) do not enter the retained group; their
+observed value equals \code{censoring_balance(weighted = TRUE, rows = "censorable")}. Both versions share the standardising SD \code{s_R} of the
+whole risk set and are computed from the same draws.
+
+The observed RRB is computed in the same way from the observed \code{D} and
+\code{pi_hat} (post weight \code{w_ref / pi_hat}; this equals \code{rrb(method = "weighted")} when the weights are not truncated). Only cells with at least
+one artificially censored clone in the observed data are used, so MaxIB is
+taken over the same cells in the data and in the draws; a cell without any
+censored clone in a draw contributes \verb{RRB* = 0} (it would not be a
+diagnostic cell), and cells whose observed RRB is \code{NA} (zero reference
+variance) are dropped.
+
+The reference is \strong{conditional} on the observed risk sets and reference
+weights: redrawn censoring is not propagated to later risk sets or to
+\verb{W_\{t-1\}}. It is therefore defined for the \strong{interval scope only} (the
+0-targeted local reconstruction; see \code{\link[=rrb]{rrb()}}). It captures the sampling
+variability of the censoring indicators and of the censoring-model fit, but
+not that of covariates or of earlier-interval weights.
 }
 
-\subsection{Coupling}{
+\subsection{Within-individual dependence}{
 
-The strategies of one individual are censored by the same treatment
-event: at the end of a grace period, for example, the individual is
-censored under "initiate within the window" if it does not initiate and
-under "do not initiate" if it does. With \code{coupling = "individual"}
-(default) the censorable rows of one individual in one interval (\code{id} x
-\code{time}) share a uniform variate \code{U}, and \code{U < P(A_k = 1 | H_k)}
-represents treatment in interval \code{k}. A row of a group censored on
-\code{A_k = 1} (where \code{P(A_k = 1) = 1 - pi_hat}) is censored if
-\code{U < 1 - pi_hat}, and a row of a group censored on \code{A_k = 0} if
-\code{U >= pi_hat}. Each row keeps its marginal probability \code{1 - pi_hat};
-when the models of two strategies agree (\code{pi_1 = 1 - pi_2}) the
-indicators are exactly complementary. A row that is the only censorable
-row of its \code{id} x \code{time} group is an independent draw. With
-\code{coupling = "independent"} every censorable row gets its own Bernoulli
-draw.
+The clones of one individual are artificially censored by functions of
+the same treatment history: at the end of a grace period, for example,
+the clone of an "initiate within the window" strategy is censored if the
+individual does not initiate and the clone of a "do not initiate"
+strategy is censored if the individual does. Redrawing every censorable
+row independently would ignore this dependence, so the null distribution
+of statistics that combine strategies (MaxIB over strategies) would not
+reflect the joint behaviour of the clones. The default
+\code{coupling = "individual"} preserves each row's marginal censoring
+probability \code{1 - pi_hat} exactly (cell-level null marginals are
+unchanged) and ties the clones of an individual together through a
+shared uniform variate: when the strategy-specific models agree
+(\code{pi_grace_end = 1 - pi_no_init}) the indicators are exactly
+complementary, and otherwise the coupling is the maximally dependent one
+compatible with both marginals. A row that is the only censorable row of
+its \code{id} x \code{time} group gets its own variate, which is the independent
+draw. \code{coupling = "independent"} reproduces the earlier behaviour
+(independent Bernoulli draws per row).
 
-The orientation of each strategy x phase group (censored on \code{A_k = 1} or
-on \code{A_k = 0}) is the value of the \code{treatment} column among its censored
-rows. A group without censored rows, and every group when the \code{treatment}
-column is absent, falls back to the phase rule: \code{"grace_end"} is censored
-on \code{A_k = 0}, any other phase on \code{A_k = 1}. This rule fits the
-initiation-window strategies of \code{\link[=ccw_clone]{ccw_clone()}} and \code{\link[=simulate_ccw]{simulate_ccw()}} but
-not a sustained "always treat" strategy, which needs the \code{treatment}
-column. If the censored rows of a group have both treatment values,
-\code{rrb_null()} stops; use \code{coupling = "independent"}.
+The orientation of each strategy x phase group (censored on \code{A_t = 1} or
+on \code{A_t = 0}) is read from the data: it is the value of the \code{treatment}
+column among the artificially censored rows of the group. In window mode
+(\code{\link[=ccw_clone]{ccw_clone()}}, \code{\link[=simulate_ccw]{simulate_ccw()}}) \code{"no_init"} rows are censored on
+\code{A_t = 1} and \code{"grace_end"} rows on \code{A_t = 0}; in sustained mode the
+"always treat" strategy is censored on \code{A_t = 0} and the "never treat"
+strategy on \code{A_t = 1}, so their clones are coupled as complementary
+events. A group without censored rows falls back to the phase rule
+(\code{"grace_end"}: \code{A_t = 0}; any other phase: \code{A_t = 1}), and so does every
+group when the \code{treatment} column is absent (which is correct for window
+mode, but not for sustained "always treat" strategies). If the censored
+rows of a group have both treatment values, censoring is not a function
+of the treatment and \code{rrb_null()} stops; use \code{coupling = "independent"}.
 }
 }
 \examples{

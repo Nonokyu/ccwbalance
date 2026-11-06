@@ -16,11 +16,13 @@ censoring_balance(
   w_prev = "w_prev_unstab",
   w_ref = "w_ref",
   w_post = "w_post",
-  cap = NULL
+  cap = NULL,
+  rows = c("all", "censorable"),
+  censor_possible = "censor_possible"
 )
 }
 \arguments{
-\item{data}{Long data (with weights if \code{weighted = TRUE}).}
+\item{data}{Long clone data.}
 
 \item{features}{Feature columns.}
 
@@ -32,38 +34,61 @@ censoring_balance(
 (\code{w_prev} is used by \code{weights = "model"}, \code{w_ref} and \code{w_post} by
 \code{weights = "estimator"}).}
 
-\item{cap}{Truncation cap for the censored-row weights of
+\item{cap}{Truncation cap for the censored-clone weights of
 \code{weights = "estimator"}; \code{NULL} (default) takes
 \code{attr(data, "weighting")$cap} (\code{Inf} if absent).}
+
+\item{rows}{\code{"all"} (default; every row of the risk set) or
+\code{"censorable"} (only rows with \code{censor_possible == TRUE} enter the two
+groups; see Details).}
+
+\item{censor_possible}{Column flagging rows at which artificial
+censoring is possible (used by \code{rows = "censorable"}).}
 }
 \value{
 A data frame with \verb{strategy, time, feature, weighted, weights, n_censored, n_retained, mean_censored, mean_retained, sd, smd}
-(\code{weights} is \code{NA} when unweighted).
+(\code{weights} is \code{"model"} or \code{"estimator"}, \code{NA} when unweighted).
 }
 \description{
-Within each stratum, compares the rows censored at the end of interval
-\code{k} (\code{D_k = 1}) with the retained rows (\code{D_k = 0}):
-\deqn{CB_{j,g}(k) = (\mu_{j,g,k}(D_k = 1) - \mu_{j,g,k}(D_k = 0)) /
-  s_{j,g,k}.}
-With \code{weighted = FALSE} the means and the standard deviation \code{s} of the
-stratum are unweighted. With \code{weighted = TRUE} each row is weighted by
-the inverse probability of its observed censoring status:
+Within each strategy x time, compares clones censored in the next interval
+(\verb{D_\{t+1\} = 1}) with those retained (\verb{D_\{t+1\} = 0}):
+\deqn{B^C_{j,g}(t) = \frac{\mu_{j,g,t}(D_{t+1}=1) - \mu_{j,g,t}(D_{t+1}=0)}{s_{j,g,t}}.}
+With \code{weighted = TRUE} each clone is weighted by the inverse probability of
+its observed censoring status, so that balance is expected under a correct
+model; \code{s} is the reference-weighted SD of the at-risk set. Two weight
+versions are available (\code{weights}):
 \itemize{
-\item \code{weights = "model"} (default): censored rows get
-\verb{W^u_\{k-1\} / (1 - pi_k)} and retained rows \verb{W^u_\{k-1\} / pi_k}, where
-\verb{W^u_\{k-1\}} is the untruncated, unstabilised earlier weight
-(\code{w_prev_unstab}); \code{s} is \verb{W^u_\{k-1\}}-weighted. This version checks the
-fitted censoring model and is not affected by truncation.
-\item \code{weights = "estimator"}: retained rows get \code{w_post} (the possibly
-truncated \code{W_k} of the estimator) and censored rows
-\code{min(w_ref / (1 - pi_k), cap)}; \code{s} is \code{w_ref}-weighted.
+\item \code{"model"} (default): censored rows get \verb{W_\{t-1\} / (1 - pi_t)} and
+retained rows \verb{W_\{t-1\} / pi_t}, with the untruncated unstabilised
+\verb{W_\{t-1\}} (\code{w_prev}); \code{s} is \verb{W_\{t-1\}}-weighted. This checks the fitted
+censoring model only and cannot respond to weight truncation.
+\item \code{"estimator"}: retained rows get \code{w_post} (the possibly truncated
+cumulative weight \code{W_t} actually used by the estimator, i.e. the same
+post weights as \code{rrb(method = "weighted")}), censored rows
+\code{min(w_ref / (1 - pi_t), cap)}, where \code{w_ref} is the truncated
+\verb{W_\{t-1\}} (times \code{q_t} when stabilised) and \code{cap} the truncation cap of
+\code{\link[=fit_censoring_model]{fit_censoring_model()}}; \code{s} is \code{w_ref}-weighted (the reference weights
+of \code{\link[=rrb]{rrb()}}).
 }
 }
 \details{
-Without truncation both versions give the same values. \code{1 - pi_k} is
-floored at \code{1e-6}. Only strata with at least one censored and one
-retained row are returned. Loss to follow-up can be examined with
-\code{censored = "ltfu_next"} (unweighted).
+Without truncation the two versions coincide: with unstabilised weights
+the weights are identical, and with stabilised weights (default numerator,
+common to all clones of a strategy x time cell) they differ only by the
+cell-constant factor \verb{prod_\{k <= t\} q_k}, which cancels in the weighted
+means and SD.
+
+With \code{rows = "censorable"} only rows at which artificial censoring is
+possible (\code{censor_possible == TRUE}) enter the censored and the retained
+group; rows that cannot be censored in the next interval (e.g. clones of
+individuals who already initiated, with \code{pi_t = 1}) are dropped from the
+retained group. The standardising SD \code{s} is still computed over the whole
+at-risk set (with the weights described above), so that \code{"all"} and
+\code{"censorable"} share the same scale.
+
+Only strategy x time cells with at least one censored and one retained
+clone (among the rows selected by \code{rows}) are returned. The same function
+can be applied to loss to follow-up via \code{censored = "ltfu_next"} (unweighted).
 }
 \examples{
 d <- simulate_ccw(ccw_sim_params(n = 300), seed = 1)

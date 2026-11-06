@@ -2,7 +2,7 @@
 % Please edit documentation in R/balance.R
 \name{aggregate_balance}
 \alias{aggregate_balance}
-\title{Aggregate balance over intervals: IAI and MaxIB}
+\title{Time aggregation of balance trajectories: IAI and MaxIB}
 \usage{
 aggregate_balance(
   x,
@@ -14,28 +14,28 @@ aggregate_balance(
 )
 }
 \arguments{
-\item{x}{Balance table, e.g. the output of \code{\link[=rrb]{rrb()}}.}
+\item{x}{Balance trajectory table (e.g. output of \code{\link[=rrb]{rrb()}}).}
 
 \item{value}{Column holding the balance value (e.g. \code{"rrb"}, \code{"ks"},
 \code{"smd"}, \code{"mahalanobis"}).}
 
 \item{by}{Grouping columns (those absent from \code{x} are ignored).}
 
-\item{time}{Interval column.}
+\item{time}{Time column.}
 
 \item{time_weight}{\code{NULL} (equal weights) or a column name.}
 
-\item{times}{Optional subset of intervals.}
+\item{times}{Optional subset of times to aggregate over.}
 }
 \value{
 A data frame with the grouping columns and \verb{n_times, iai, maxib, time_at_max}.
 }
 \description{
-\deqn{IAI = \sum_k v_k |B(k)| / \sum_k v_k, \qquad MaxIB = \max_k |B(k)|,}
-with equal interval weights \code{v_k = 1} by default or a column of weights
-(e.g. risk-set size). The summaries are taken over all rows of \code{x} with a
-non-missing value. To obtain MaxIB over the strata with artificial
-censoring, filter \code{x} first, e.g. \code{x[x$n_censored > 0, ]}.
+\deqn{IAI = \frac{\sum_t q(t) |B(t)|}{\sum_t q(t)}, \qquad
+  MaxIB = \max_t |B(t)|}
+with equal time weights \code{q(t) = 1} by default (recommended primary
+analysis); a column of time weights (e.g. risk-set size or ESS) can be
+supplied for secondary analyses.
 }
 \examples{
 x <- data.frame(feature = "L", time = 0:3, rrb = c(0, 0.1, -0.3, 0.2))

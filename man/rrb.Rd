@@ -2,7 +2,7 @@
 % Please edit documentation in R/balance.R
 \name{rrb}
 \alias{rrb}
-\title{Risk-set reconstruction balance (RRB)}
+\title{Risk-set Reconstruction Balance (RRB)}
 \usage{
 rrb(
   data,
@@ -23,9 +23,9 @@ rrb(
 )
 }
 \arguments{
-\item{data}{Long data with weights (see \code{\link[=fit_censoring_model]{fit_censoring_model()}}).}
+\item{data}{Long clone data with weights (see \code{\link[=fit_censoring_model]{fit_censoring_model()}}).}
 
-\item{features}{Character vector of feature columns \code{f(H_k)}.}
+\item{features}{Character vector of feature columns \code{f(H_t)}.}
 
 \item{method}{One or more of \code{"weighted"}, \code{"unweighted"},
 \code{"unstabilized"}, \code{"stabilized"}.}
@@ -35,66 +35,63 @@ rrb(
 \item{strategy, time, censored}{Column names.}
 
 \item{w_ref, w_post, pi_hat, q_hat, w_prev_unstab, w_prev_stab}{Weight column
-names (see \code{\link[=fit_censoring_model]{fit_censoring_model()}}).}
+names.}
 
-\item{event}{Outcome column used to carry individuals with the outcome
-forward (cumulative scope).}
+\item{event}{Outcome column used to carry event clones forward in the
+cumulative scope.}
 
-\item{carry_events}{Carry individuals with the outcome forward
-(cumulative scope)?}
+\item{carry_events}{Carry forward clones with the outcome (cumulative
+scope)?}
 }
 \value{
-A data frame with \verb{strategy, time, feature, method, scope, n_risk, n_censored, mean_pre, mean_post, sd_pre, rrb} (\code{mean_pre} and \code{sd_pre}
-refer to the reference set). In the interval scope \code{n_risk} and
-\code{n_censored} are the stratum counts; in the cumulative scope \code{n_risk} is
-the baseline size and \code{n_censored} the number artificially censored up
-to and including interval \code{k}. \code{rrb} is \code{NA} when the reference
-standard deviation is 0.
+A data frame with \verb{strategy, time, feature, method, scope, n_risk, n_censored, mean_pre, mean_post, sd_pre, rrb}. For the cumulative scope
+\code{n_risk} is the baseline number of clones and \code{n_censored} the
+cumulative number artificially censored up to and including \code{t}.
 }
 \description{
-For each strategy \code{g}, history feature \code{f_j(H_k)} and interval \code{k},
-compares the weighted mean of the post set with the mean of the reference
-set, standardised by the reference-weighted standard deviation:
-\deqn{RRB_{j,g}(k) = (\mu^{post}_{j,g}(k) - \mu^{ref}_{j,g}(k)) /
-  s^{ref}_{j,g}(k).}
+For each strategy \code{g}, feature \code{j} and time \code{t}, compares a reference
+("pre") distribution with the IPCW-weighted distribution of the clones
+retained after artificial censoring ("post"), standardised by the
+(reference-weighted) reference SD:
+\deqn{RRB_{j,g}(t) = \frac{\mu^{post,w}_{j,g}(t) - \mu^{pre}_{j,g}(t)}{s^{pre}_{j,g}(t)}.}
 }
 \details{
 \subsection{Scope}{
 \itemize{
-\item \code{scope = "interval"} (default): the reference set is the risk set of
-the stratum just before artificial censoring at the end of interval
-\code{k}, and the post set is the rows retained (\code{D_k = 0}). Under a
-correctly specified censoring model and positivity the target is 0 for
-every history function \code{f(H_k)}, including post-baseline covariates.
-\item \code{scope = "cumulative"}: the reference set is the unweighted risk set at
-the first interval of the strategy (the baseline population). The post
-set is the rows retained at \code{k}, weighted by the cumulative weight
-\code{W_k}, together with the individuals who had the outcome while retained
-in an earlier interval \code{tau < k} (\code{carry_events = TRUE}). These enter
-with their feature values at \code{tau} and the weight \verb{W_tau Q_k / Q_tau},
-that is, the weight at the event rescaled by the stratum numerators
-\code{q_l}, \verb{tau < l <= k} (with unstabilised weights the factor is 1). The
-target is 0 only for baseline-fixed features (\code{X}, \verb{<v>_base} from
-\code{\link[=make_history_features]{make_history_features()}}) and only when loss to follow-up is absent or
-weighted. For post-baseline features such as \code{L_k} the cumulative RRB
-is descriptive.
+\item \code{scope = "interval"} (default; local reconstruction): the reference is
+the risk set at \code{t} just before artificial censoring in \verb{[t, t+1)}, the
+post set the clones retained after it. Under a correctly specified
+censoring model and positivity the IPW identity
+\verb{E[I(D = 0) f(H_t) / pi(H_t)] = E[f(H_t)]} gives a target of 0 for
+\strong{every} history feature \code{f(H_t)}, including post-baseline \code{L_t}.
+\item \code{scope = "cumulative"} (reconstruction of the baseline population): the
+reference is the cloned population at baseline (first time of the
+strategy, unweighted), the post set the clones retained at \code{t} weighted
+by the full cumulative weight \code{W_t}, plus clones that had the outcome
+while uncensored before \code{t} (carried forward with their weight and
+feature values at the event; \code{carry_events = TRUE}). The target is 0
+\strong{only for baseline-fixed features} (\code{X}, \code{L_0} via \verb{<v>_base} from
+\code{\link[=make_history_features]{make_history_features()}}) and only if there is no loss to follow-up that
+is left unweighted. For post-baseline features such as \code{L_t},
+cumulative RRB is \strong{not} 0-targeted: \code{L_t} evolves over time and is
+affected by treatment (\verb{A_\{t-1\} -> L_t}), so a non-zero value is expected
+even under correct weighting; it is descriptive only.
 }
 }
 
-\subsection{Methods (reference / post weights)}{
+\subsection{Methods (weights on the reference / post side)}{
 \itemize{
-\item \code{"unweighted"}: 1 / 1;
-\item \code{"unstabilized"}: interval \verb{W^u_\{k-1\}} / \verb{W^u_\{k-1\} / pi_k};
-cumulative 1 / \code{W^u_k};
-\item \code{"stabilized"}: interval \verb{W_\{k-1\} q_k} / \verb{W_\{k-1\} q_k / pi_k};
-cumulative 1 / \code{W_k}. The rescaling of carried rows needs \code{q_hat} to be
-constant within strata (the default numerator of
-\code{\link[=fit_censoring_model]{fit_censoring_model()}}); a warning is given otherwise;
-\item \code{"weighted"}: the columns \code{w_ref} / \code{w_post} of \code{\link[=fit_censoring_model]{fit_censoring_model()}}
-(cumulative scope: 1 / \code{w_post}). With truncated weights this gives the
-RRB of the weights used by the estimator. The interval RRB of the
-untruncated model weight (post weight \code{w_ref / pi_hat}) is returned by
-\code{\link[=rrb_null]{rrb_null()}} as \code{cells$rrb_obs}.
+\item \code{"unweighted"}: 1 / 1 (the raw selection induced by artificial
+censoring);
+\item \code{"unstabilized"}: interval scope \verb{W_\{t-1\}} / \verb{W_\{t-1\} / pi_t}; cumulative
+scope 1 / \code{W_t} (unstabilised);
+\item \code{"stabilized"}: interval scope \verb{W_\{t-1\} q_t} / \verb{W_\{t-1\} q_t / pi_t} (as in
+the report's formula); cumulative scope 1 / \code{W_t^s} (carried event clones
+are extended with the cell numerators \code{q_k}, which requires the default
+numerator of \code{\link[=fit_censoring_model]{fit_censoring_model()}}; a warning is given otherwise);
+\item \code{"weighted"}: columns \code{w_ref} / \code{w_post} as produced by
+\code{\link[=fit_censoring_model]{fit_censoring_model()}} (the chosen scheme, including truncation;
+cumulative scope uses \code{w_post} only).
 }
 }
 }

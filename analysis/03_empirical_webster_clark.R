@@ -9,6 +9,15 @@
 #   -> data-raw/webster_clark/Data/baseccwcohort.sas7bdat   (git-ignored)
 # The repository also contains the authors' SAS and R code (R_code/), which
 # this script re-implements in the ccwbalance long-data contract.
+# Time-varying covariates come from the cohort's CMS DE-SynPUF claims:
+#   bash data-raw/get_synpuf_claims.sh -> data-raw/synpuf_claims/ (git-ignored)
+# Data preparation is shared with 03b, 03c, 03d and 02g (analysis/wc_data.R):
+#   visit (carrier claim), outpt (hospital outpatient claim) and fill (Part D
+#   dispensing other than the index antiplatelet) in the 10 days before each
+#   interval. Three history-depth functions of the same dispensings
+#   (fill_lag: fill in the previous window; fill_30: number in the 30 days
+#   before the interval; fill_cum: number since discharge) are monitored by
+#   the diagnostics but enter no censoring model.
 #
 # Variables used (one row per patient, n = 1590):
 #   ID, Discharge_date, birthdate, baseline_age, sex (SynPUF: 1 = male,
@@ -18,14 +27,13 @@
 #
 # Design (as in the tutorial, strategies over a 180-day horizon):
 #   "0_30"  initiate within days 0-30      "0_90"  initiate within days 0-90
-#   "30_90" initiate within days 30-90
 #   "no_0_90" no initiation during days 0-89 (intervals 0-8); initiation
 #             from day 90 onwards is allowed and not censored. (Earlier
 #             versions used "none" = never initiate over the 180 days.)
 #
 # DEVIATIONS from the tutorial (discrete-time re-implementation):
 #   * Time is discretised into DELTA-day intervals [k*DELTA, (k+1)*DELTA).
-#     Hence "0_30" = initiation on days 0-29 and "0_90"/"30_90" end on day 89;
+#     Hence "0_30" = initiation on days 0-29 and "0_90" ends on day 89;
 #     patients starting exactly on day 30 or day 90 are handled differently
 #     from the tutorial (counts printed below).
 #   * The tutorial fits the grace-end censoring model among "recent starters"
@@ -34,8 +42,8 @@
 #     interval (starters within the last DELTA days vs non-starters).
 #   * An outcome (or loss to follow-up) in the grace-end interval precedes the
 #     "not started by day 30/90" deviation (ccw_clone() default), as in the
-#     tutorial; early-initiation deviations ("30_90", "no_0_90") are applied at
-#     the start of the interval of initiation.
+#     tutorial; the early-initiation deviation of "no_0_90" is applied at the
+#     start of the interval of initiation.
 #   * Loss to follow-up (followup < 180 without outcome) is treated as
 #     non-informative (as in the tutorial) and is not weighted.
 #   * Risks: weighted discrete-time Kaplan-Meier (estimate_risk()); the
@@ -43,22 +51,28 @@
 #     direct port of the tutorial's continuous-time "0_30"/"0_90" analyses is
 #     included below as a cross-check.
 #
+# Diagnostics: interval RRB, M^RR (interval), strategy and censoring balance
+# over the eleven history functions (five baseline covariates, three
+# time-varying claims indicators, three depth functions); cumulative RRB
+# over the baseline covariates. Censoring model as in the tutorial (age, sex,
+# renal); 03c adds race and/or the time-varying covariates.
+#
+# Outputs (output/empirical/, git-ignored) include wc_rrb.csv,
+# wc_timevarying.csv (id x time covariates and depth functions) and
+# wc_timevarying_assoc.csv (column `model`: "indicators" = initiation and
+# outcome models with visit, outpt, fill; "indicators + depth" = initiation
+# model with fill_lag, fill_30, fill_cum added).
+#
 # Run from the project root:  Rscript analysis/03_empirical_webster_clark.R
 
 if (!file.exists("DESCRIPTION")) stop("Run this script from the project root.")
-data_file <- file.path("data-raw", "webster_clark", "Data",
-                       "baseccwcohort.sas7bdat")
-if (!file.exists(data_file)) {
-  stop("Data not found: ", data_file, "\nRun:\n  git clone ",
-       "https://github.com/mawcpharmdphd/CCW_tutorial data-raw/webster_clark")
-}
 suppressMessages(pkgload::load_all(".", quiet = TRUE))
+source(file.path("analysis", "wc_data.R"))
 library(ggplot2)
 
 DELTA <- as.numeric(Sys.getenv("WC_DELTA", "10"))
 HORIZON <- 180
 N_BOOT <- as.numeric(Sys.getenv("WC_N_BOOT", "200"))
-K <- HORIZON / DELTA
 fig_dir <- file.path("output", "figures")
 out_dir <- file.path("output", "empirical")
 dir.create(fig_dir, recursive = TRUE, showWarnings = FALSE)
@@ -68,24 +82,19 @@ save_fig <- function(p, name, width = 9, height = 6) {
          dpi = 150)
 }
 
-# 1. Cohort --------------------------------------------------------------------
-raw <- haven::read_sas(data_file)
-cohort <- data.frame(
-  id = seq_len(nrow(raw)), ID = raw$ID,
-  age = raw$baseline_age,
-  female = as.numeric(raw$sex == "2"),
-  renal = as.numeric(raw$renal == "Y"),
-  race_black = as.numeric(raw$race == "2"),
-  race_other = as.numeric(raw$race %in% c("3", "5")),
-  rx = raw$RX_start, fu = raw$followup, outcome = raw$outcome
-)
-day_to_int <- function(d) floor(d / DELTA)
-cohort$init_time <- ifelse(is.na(cohort$rx) | cohort$rx >= HORIZON, Inf,
-                           day_to_int(cohort$rx))
-cohort$event_time <- ifelse(cohort$outcome == 1 & cohort$fu <= HORIZON,
-                            pmin(day_to_int(cohort$fu), K - 1), Inf)
-cohort$ltfu_time <- ifelse(cohort$outcome == 0 & cohort$fu < HORIZON,
-                           day_to_int(cohort$fu), Inf)
+# 1. Cohort, long data and time-varying covariates (analysis/wc_data.R) -------
+wc <- wc_prepare(delta = DELTA, horizon = HORIZON)
+raw <- wc$raw
+cohort <- wc$cohort
+long <- wc$long
+covs <- wc$covs
+tvf <- wc$tvf
+depth <- wc$depth
+feats <- wc$feats
+strategies <- wc$strategies
+K <- wc$K
+w30 <- wc$w30
+w90 <- wc$w90
 cat(sprintf("n = %d; initiators within 180 d: %d; outcomes within 180 d: %d;",
             nrow(cohort), sum(is.finite(cohort$init_time)),
             sum(is.finite(cohort$event_time))),
@@ -94,28 +103,55 @@ cat(sprintf("Starters exactly on day 30: %d, on day 90: %d, on day 0: %d\n",
             sum(cohort$rx == 30, na.rm = TRUE),
             sum(cohort$rx == 90, na.rm = TRUE),
             sum(cohort$rx == 0, na.rm = TRUE)))
+write.csv(wc$tv, file.path(out_dir, "wc_timevarying.csv"), row.names = FALSE)
+cat("\nMeans of the time-varying covariates and depth functions by",
+    "interval:\n")
+print(round(t(sapply(c(tvf, depth),
+                     function(v) tapply(wc$tv[[v]], wc$tv$time, mean))), 2))
+cat("Overall means:\n")
+print(round(colMeans(wc$tv[, c(tvf, depth)]), 3))
 
-covs <- c("age", "female", "renal", "race_black", "race_other")
-w30 <- day_to_int(30)
-w90 <- day_to_int(90)
-strategies <- list("0_30" = c(0, w30 - 1), "0_90" = c(0, w90 - 1),
-                   "30_90" = c(w30, w90 - 1), "no_0_90" = c(NA, w90 - 1))
-long <- ccw_clone(cohort, strategies, n_time = K, covariates = covs)
+# initiation and outcome associations of the time-varying covariates
+# (no_0_90 clones in the no-initiation phase, intervals 0-8)
+pp <- long[long$strategy == "no_0_90" & long$phase == "no_init", ]
+# model "indicators + depth": initiation model with the depth functions
+# added, to check whether they add to the prediction of initiation
+assoc_fit <- function(y, terms, label) {
+  f <- stats::as.formula(paste(y, "~ age + female + renal + time +",
+                               paste(terms, collapse = " + ")))
+  m <- stats::glm(f, family = stats::binomial(), data = pp)
+  cf <- summary(m)$coef
+  data.frame(model = label,
+             response = ifelse(y == "censored_next", "initiation",
+                               "outcome"),
+             term = terms, log_or = cf[terms, 1], se = cf[terms, 2],
+             or = exp(cf[terms, 1]), p = cf[terms, 4],
+             n_rows = stats::nobs(m), n_y = sum(m$y))
+}
+assoc <- rbind(
+  assoc_fit("censored_next", tvf, "indicators"),
+  assoc_fit("event_next", tvf, "indicators"),
+  assoc_fit("censored_next", c(tvf, depth), "indicators + depth")
+)
+rownames(assoc) <- NULL
+cat("\nInitiation (censored_next) and outcome (event_next) associations of",
+    "the time-varying covariates\n(logistic models on the no_0_90",
+    "no-initiation rows, adjusted for age, sex, renal, time; model",
+    "'indicators + depth' adds fill_lag, fill_30, fill_cum):\n")
+print(assoc, digits = 3, row.names = FALSE)
+write.csv(assoc, file.path(out_dir, "wc_timevarying_assoc.csv"),
+          row.names = FALSE)
 
 # 2. Censoring model and IPCW --------------------------------------------------
 # as in the tutorial: age, sex, renal; time terms for the no-initiation phase
-formulas <- list(
-  no_init = ~ age + female + renal + time + I(time^2),
-  grace_end = ~ age + female + renal
-)
+formulas <- wc$formulas$base
 w <- fit_censoring_model(long, formulas, stabilized = TRUE)
 est <- estimate_risk(w)
 risk_h <- est[est$time == K - 1, c("strategy", "risk")]
 rd <- function(e) {
   r <- stats::setNames(e$risk[e$time == max(e$time)],
                        as.character(e$strategy[e$time == max(e$time)]))
-  c(rd_0_90_vs_0_30 = r[["0_90"]] - r[["0_30"]],
-    rd_30_90_vs_0_30 = r[["30_90"]] - r[["0_30"]])
+  c(rd_0_90_vs_0_30 = r[["0_90"]] - r[["0_30"]])
 }
 rd_hat <- rd(est)
 
@@ -130,7 +166,7 @@ boot <- t(vapply(seq_len(N_BOOT), function(b) {
   eb <- estimate_risk(wb)
   c(stats::setNames(eb$risk[eb$time == K - 1],
                     as.character(eb$strategy[eb$time == K - 1])), rd(eb))
-}, numeric(6)))
+}, numeric(4)))
 res_tab <- data.frame(
   quantity = c(paste0("risk_", names(strategies)), names(rd_hat)),
   estimate = c(risk_h$risk, rd_hat),
@@ -226,7 +262,7 @@ save_fig(p_w, "wc_weight_distribution.png", 11, 6)
 
 # (2) end-of-grace SMD across strategies (weighted retained clones at the
 #     first interval after the 0-90 grace period), reference 0_30
-sb <- strategy_balance(w, covs, reference = "0_30")
+sb <- strategy_balance(w, feats, reference = "0_30")
 eog <- sb[sb$time == w90, ]
 cat("\nEnd-of-grace strategy SMD (interval", w90, ", reference 0_30):\n")
 print(eog[, c("strategy", "feature", "smd")], digits = 3, row.names = FALSE)
@@ -240,8 +276,8 @@ p_sb <- ggplot(sb, aes(time, smd, colour = feature)) +
 save_fig(p_sb, "wc_strategy_balance.png", 10, 4)
 
 # (3) Jackson-type censoring balance
-cb <- rbind(censoring_balance(w, covs, weighted = FALSE),
-            censoring_balance(w, covs, weighted = TRUE))
+cb <- rbind(censoring_balance(w, feats, weighted = FALSE),
+            censoring_balance(w, feats, weighted = TRUE))
 p_cb <- ggplot(cb, aes(time, abs(smd), colour = feature)) +
   geom_line() + geom_point(size = 1) +
   facet_grid(weighted ~ strategy, labeller = label_both) +
@@ -251,7 +287,10 @@ p_cb <- ggplot(cb, aes(time, abs(smd), colour = feature)) +
 save_fig(p_cb, "wc_censoring_balance.png", 11, 5)
 
 # 5. Proposed diagnostics -----------------------------------------------------
-r_int <- rrb(w, covs, method = c("unweighted", "weighted"))
+# interval RRB over the eleven history functions (baseline covariates, the
+# three time-varying claims indicators and the three depth functions);
+# cumulative RRB over the baseline covariates only
+r_int <- rrb(w, feats, method = c("unweighted", "weighted"))
 r_cum <- rrb(w, covs, method = c("unweighted", "weighted"),
              scope = "cumulative")
 write.csv(rbind(r_int, r_cum), file.path(out_dir, "wc_rrb.csv"),
@@ -260,13 +299,19 @@ save_fig(plot_love_dynamic(r_int), "wc_love_dynamic.png", 12, 6)
 save_fig(plot_love_dynamic(r_cum), "wc_love_cumulative.png", 12, 6)
 save_fig(plot_balance_heatmap(r_int[r_int$method == "weighted", ]),
          "wc_heatmap_rrb.png", 10, 9)
-mh <- mahalanobis_rr(w, covs, method = c("unweighted", "weighted"),
-                     scope = c("interval", "cumulative"), ridge = 0.01)
+# interval scope over all eleven history functions; cumulative scope over the
+# baseline covariates only (0-targeted only for baseline-fixed features)
+mh <- rbind(
+  mahalanobis_rr(w, feats, method = c("unweighted", "weighted"),
+                 scope = "interval", ridge = 0.01),
+  mahalanobis_rr(w, covs, method = c("unweighted", "weighted"),
+                 scope = "cumulative", ridge = 0.01)
+)
 save_fig(plot_mahalanobis(mh), "wc_mahalanobis.png", 10, 4)
 ws <- weight_support(w)
 write.csv(ws, file.path(out_dir, "wc_weight_support.csv"), row.names = FALSE)
 save_fig(plot_weight_support(ws), "wc_weight_support.png", 12, 3.5)
-db <- plot_dashboard(w, covs, ecdf_feature = "age", ecdf_strategy = "0_30",
+db <- plot_dashboard(w, feats, ecdf_feature = "age", ecdf_strategy = "0_30",
                      title = "Webster-Clark SynPUF cohort: CCW diagnostics",
                      ridge = 0.01)
 save_fig(db, "wc_dashboard.png", 16, 17)

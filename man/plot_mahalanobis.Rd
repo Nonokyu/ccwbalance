@@ -2,12 +2,12 @@
 % Please edit documentation in R/plots.R
 \name{plot_mahalanobis}
 \alias{plot_mahalanobis}
-\title{Mahalanobis reconstruction balance plot}
+\title{Global (Mahalanobis) reconstruction balance trajectory}
 \usage{
 plot_mahalanobis(x, censored_times_only = TRUE)
 }
 \arguments{
-\item{x}{Output of \code{\link[=mahalanobis_rr]{mahalanobis_rr()}}.}
+\item{x}{Output of \code{\link[=mahalanobis_rr]{mahalanobis_rr()}} (several scopes are faceted).}
 
 \item{censored_times_only}{See \code{\link[=plot_love_dynamic]{plot_love_dynamic()}}.}
 }
@@ -15,8 +15,7 @@ plot_mahalanobis(x, censored_times_only = TRUE)
 A ggplot object.
 }
 \description{
-Plots \code{M^RR_g(k)} against the interval, by strategy and method (one
-panel per scope when \code{x} has both scopes).
+Global (Mahalanobis) reconstruction balance trajectory
 }
 \examples{
 d <- simulate_ccw(ccw_sim_params(n = 300), seed = 1)

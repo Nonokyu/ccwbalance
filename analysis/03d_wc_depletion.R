@@ -4,12 +4,11 @@
 # PURPOSE: the end-of-grace between-strategy SMD of a baseline covariate
 #   compares the weighted individuals retained (and event-free) under two
 #   strategies; after outcome events it contains a depletion term
-#   (depletion equation of Section 3.2 of the manuscript), whereas
-#   cumulative RRB carries individuals with earlier events forward (weights
-#   rescaled by the stabilising numerators) and targets the baseline
-#   population. For the baseline covariates at day 30 and day 90 (interval
-#   starting on that day, `w30`/`w90` of 03_empirical_webster_clark.R) this
-#   script reports
+#   (depletion equation of the manuscript), whereas cumulative RRB carries
+#   individuals with earlier events forward (weights rescaled by the
+#   stabilising numerators) and targets the baseline population. For the
+#   baseline covariates at day 30 and day 90 (interval starting on that day,
+#   `w30`/`w90` of 03_empirical_webster_clark.R) this script reports
 #     * the weighted and unweighted between-strategy SMD (strategy_balance()),
 #     * the cumulative RRB of each strategy (rrb(scope = "cumulative")),
 #     * the within-strategy depletion component
@@ -26,58 +25,31 @@
 #
 # INPUTS:  data-raw/webster_clark/Data/baseccwcohort.sas7bdat (git-ignored;
 #          git clone https://github.com/mawcpharmdphd/CCW_tutorial
-#          data-raw/webster_clark)
+#          data-raw/webster_clark) and data-raw/synpuf_claims/ (read by
+#          analysis/wc_data.R; the time-varying covariates are not used)
 # OUTPUTS: output/empirical/wc_depletion.csv (tidy: time, time_day,
 #          covariate, strategy, pair, weighted, quantity, value)
 #
 # Run from the project root:  Rscript analysis/03d_wc_depletion.R
 
 if (!file.exists("DESCRIPTION")) stop("Run this script from the project root.")
-data_file <- file.path("data-raw", "webster_clark", "Data",
-                       "baseccwcohort.sas7bdat")
-if (!file.exists(data_file)) {
-  stop("Data not found: ", data_file, "\nRun:\n  git clone ",
-       "https://github.com/mawcpharmdphd/CCW_tutorial data-raw/webster_clark")
-}
 t_start <- Sys.time()
 suppressMessages(pkgload::load_all(".", quiet = TRUE))
+source(file.path("analysis", "wc_data.R"))
 
-DELTA <- 10
-HORIZON <- 180
-K <- HORIZON / DELTA
 out_dir <- file.path("output", "empirical")
 dir.create(out_dir, recursive = TRUE, showWarnings = FALSE)
 
-# 1. Cohort, long data and weights (as in 03_empirical_webster_clark.R) -----
-raw <- haven::read_sas(data_file)
-cohort <- data.frame(
-  id = seq_len(nrow(raw)), ID = raw$ID,
-  age = raw$baseline_age,
-  female = as.numeric(raw$sex == "2"),
-  renal = as.numeric(raw$renal == "Y"),
-  race_black = as.numeric(raw$race == "2"),
-  race_other = as.numeric(raw$race %in% c("3", "5")),
-  rx = raw$RX_start, fu = raw$followup, outcome = raw$outcome
-)
-day_to_int <- function(d) floor(d / DELTA)
-cohort$init_time <- ifelse(is.na(cohort$rx) | cohort$rx >= HORIZON, Inf,
-                           day_to_int(cohort$rx))
-cohort$event_time <- ifelse(cohort$outcome == 1 & cohort$fu <= HORIZON,
-                            pmin(day_to_int(cohort$fu), K - 1), Inf)
-cohort$ltfu_time <- ifelse(cohort$outcome == 0 & cohort$fu < HORIZON,
-                           day_to_int(cohort$fu), Inf)
-
-covs <- c("age", "female", "renal", "race_black", "race_other")
-w30 <- day_to_int(30)
-w90 <- day_to_int(90)
-strategies <- list("0_30" = c(0, w30 - 1), "0_90" = c(0, w90 - 1),
-                   "30_90" = c(w30, w90 - 1), "no_0_90" = c(NA, w90 - 1))
-long <- ccw_clone(cohort, strategies, n_time = K, covariates = covs)
-formulas <- list(
-  no_init = ~ age + female + renal + time + I(time^2),
-  grace_end = ~ age + female + renal
-)
-w <- fit_censoring_model(long, formulas, stabilized = TRUE)
+# 1. Cohort, long data and weights (analysis/wc_data.R, as in analysis/03) ---
+wc <- wc_prepare(delta = 10, horizon = 180)
+DELTA <- wc$delta
+K <- wc$K
+cohort <- wc$cohort
+covs <- wc$covs
+w30 <- wc$w30
+w90 <- wc$w90
+strategies <- wc$strategies
+w <- fit_censoring_model(wc$long, wc$formulas$base, stabilized = TRUE)
 
 # cross-check against the saved outputs of 03_empirical_webster_clark.R
 est <- estimate_risk(w)
@@ -90,7 +62,7 @@ chk <- merge(r_cum, saved_cum,
              by = c("strategy", "time", "feature", "method", "scope"))
 cat(sprintf("Cross-check: max |risk - saved| = %.2e; ",
             max(abs(est$risk[est$time == K - 1] -
-                      saved_est$estimate[1:4]))),
+                      saved_est$estimate[seq_along(strategies)]))),
     sprintf("max |cumulative RRB - saved| = %.2e (%d rows)\n",
             max(abs(chk$rrb.x - chk$rrb.y), na.rm = TRUE), nrow(chk)))
 
@@ -98,8 +70,7 @@ cat(sprintf("Cross-check: max |risk - saved| = %.2e; ",
 times <- c(w30, w90)
 strat <- names(strategies)
 pairs <- list(c("0_90", "0_30"), c("0_30", "no_0_90"),
-              c("0_90", "no_0_90"), c("30_90", "0_30"),
-              c("30_90", "no_0_90"), c("0_90", "30_90"))
+              c("0_90", "no_0_90"))
 row_out <- function(tt, cv, g, pr, wt, q, v) {
   data.frame(time = tt, time_day = tt * DELTA, covariate = cv, strategy = g,
              pair = pr, weighted = wt, quantity = q, value = v)

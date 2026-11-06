@@ -1,20 +1,20 @@
-# Rows of groups with at least two points (for geom_line)
+# Internal: rows belonging to groups with >= 2 points (for geom_line)
 .multi_point <- function(x, by) {
   k <- interaction(x[by], drop = TRUE)
   x[stats::ave(seq_along(k), k, FUN = length) > 1, , drop = FALSE]
 }
 
-#' Dynamic Love plot of RRB
+#' Dynamic Love plot of risk-set reconstruction balance
 #'
-#' Plots `|RRB_{j,g}(k)|` against the interval, one line per feature, with
-#' one panel column per strategy and one panel row per method (method x
-#' scope when `x` has both scopes).
+#' Plots `|RRB_{j,g}(t)|` against follow-up time, one line per feature, with
+#' one panel row per method (e.g. unweighted selection vs IPCW-weighted
+#' reconstruction) and one column per strategy.
 #'
-#' @param x Output of [rrb()].
-#' @param threshold Height of a reference line (default 0.1); `NULL` for
-#'   none.
-#' @param censored_times_only Keep only strata with artificial censoring
-#'   (`n_censored > 0`)?
+#' @param x Output of [rrb()] (possibly with several methods and/or both
+#'   scopes; with two scopes, panel rows are method x scope).
+#' @param threshold Reference line (default 0.1); `NULL` for none.
+#' @param censored_times_only Keep only strategy x time cells where artificial
+#'   censoring occurred (`n_censored > 0`)?
 #' @return A ggplot object.
 #' @export
 #' @examples
@@ -44,7 +44,7 @@ plot_love_dynamic <- function(x, threshold = 0.1, censored_times_only = TRUE) {
     grp <- c("strategy", "method", "feature")
   }
   ttl <- if (identical(scopes, "cumulative")) {
-    "Dynamic Love plot: cumulative RRB"
+    "Dynamic Love plot: cumulative RRB (baseline population reconstruction)"
   } else {
     "Dynamic Love plot: risk-set reconstruction balance"
   }
@@ -54,8 +54,8 @@ plot_love_dynamic <- function(x, threshold = 0.1, censored_times_only = TRUE) {
     ggplot2::geom_line(data = .multi_point(x, grp), alpha = 0.8) +
     ggplot2::geom_point(size = 1.4) +
     facet +
-    ggplot2::labs(x = "Interval k", y = "|RRB(k)|",
-                  colour = "Feature f(H_k)", title = ttl) +
+    ggplot2::labs(x = "Follow-up interval t", y = "|RRB(t)|",
+                  colour = "Feature f(H_t)", title = ttl) +
     ggplot2::theme_bw()
   if (!is.null(threshold)) {
     p <- p + ggplot2::geom_hline(yintercept = threshold, linetype = 2,
@@ -64,17 +64,14 @@ plot_love_dynamic <- function(x, threshold = 0.1, censored_times_only = TRUE) {
   p
 }
 
-#' Balance heatmap with IAI and MaxIB margins
+#' Balance heatmap (feature x time) with IAI / MaxIB margin
 #'
-#' Shows the absolute balance value by feature and interval, one panel per
-#' strategy, with two margin columns holding IAI and MaxIB computed by
-#' [aggregate_balance()] over the displayed intervals.
-#'
-#' @param x Balance table with a single method and a single scope, e.g. the
-#'   output of [rrb()] or [ks_rr()].
+#' @param x Balance trajectory table (e.g. [rrb()] or [ks_rr()] output, a
+#'   single method and a single scope).
 #' @param value Column to display in absolute value (`"rrb"` or `"ks"`).
 #' @param censored_times_only See [plot_love_dynamic()].
-#' @return A ggplot object.
+#' @return A ggplot object; the two right-most columns show IAI and MaxIB
+#'   (computed with [aggregate_balance()] over the displayed times).
 #' @export
 #' @examples
 #' d <- simulate_ccw(ccw_sim_params(n = 300), seed = 1)
@@ -123,17 +120,17 @@ plot_balance_heatmap <- function(x, value = "rrb", censored_times_only = TRUE) {
                                  na.value = "grey85") +
     ggplot2::facet_wrap(~strategy, ncol = 1,
                         labeller = ggplot2::label_both) +
-    ggplot2::labs(x = "Interval k  |  summaries",
-                  y = "Feature f(H_k)",
+    ggplot2::labs(x = "Follow-up interval t  |  time summaries",
+                  y = "Feature f(H_t)",
                   title = ttl) +
     ggplot2::theme_minimal() +
     ggplot2::theme(panel.grid = ggplot2::element_blank())
 }
 
-#' Weight-support plot
+#' Weight-support panel
 #'
-#' Plots `ESS / n_risk`, the 95th and 99th weight percentiles and
-#' `min(pi_hat)` against the interval, by strategy.
+#' Plots ESS/N, the 95th and 99th weight percentiles and `min(pi_hat)` against
+#' time by strategy.
 #'
 #' @param x Output of [weight_support()].
 #' @return A ggplot object.
@@ -158,27 +155,25 @@ plot_weight_support <- function(x) {
     ggplot2::geom_line() +
     ggplot2::geom_point(size = 1.2) +
     ggplot2::facet_wrap(~metric, scales = "free_y", nrow = 1) +
-    ggplot2::labs(x = "Interval k", y = NULL, colour = "Strategy",
+    ggplot2::labs(x = "Follow-up interval t", y = NULL, colour = "Strategy",
                   title = "Weight support / positivity") +
     ggplot2::theme_bw()
 }
 
-#' ECDF before and after artificial censoring
+#' Selected-time ECDF panel: pre-censoring vs post-censoring (weighted)
 #'
-#' For one feature, strategy and selected intervals, shows the weighted ECDF
-#' of the risk set before censoring (reference weights), the unweighted ECDF
-#' of the retained rows and the weighted ECDF of the retained rows (post
-#' weights), as in the interval scope of [rrb()].
+#' Shows the reference (pre-artificial-censoring) ECDF, the unweighted ECDF
+#' of retained clones and the IPCW-weighted ECDF of retained clones for one
+#' feature at selected times.
 #'
-#' @param data Long data with weights (see [fit_censoring_model()]).
+#' @param data Weighted long clone data.
 #' @param feature Feature column.
 #' @param strategy_level Strategy to display.
-#' @param times Intervals to display (default: the first four intervals
-#'   with artificial censoring).
-#' @param method Weighting method (see [rrb()]).
+#' @param times Times to display (default: times with censoring, up to 4).
+#' @param method Weighting method for the reference / post side (see [rrb()]).
 #' @param strategy,time,censored Column names.
-#' @param ... Weight column names (`w_ref`, `w_post`, `pi_hat`, `q_hat`,
-#'   `w_prev_unstab`, `w_prev_stab`), if different from the defaults.
+#' @param ... Passed to the internal weight constructor (column names
+#'   `w_ref`, `w_post`, `pi_hat`, `q_hat`, `w_prev_unstab`, `w_prev_stab`).
 #' @return A ggplot object.
 #' @export
 #' @examples
@@ -234,12 +229,9 @@ plot_ecdf_pre_post <- function(data, feature, strategy_level, times = NULL,
     ggplot2::theme(legend.position = "bottom")
 }
 
-#' Mahalanobis reconstruction balance plot
+#' Global (Mahalanobis) reconstruction balance trajectory
 #'
-#' Plots `M^RR_g(k)` against the interval, by strategy and method (one
-#' panel per scope when `x` has both scopes).
-#'
-#' @param x Output of [mahalanobis_rr()].
+#' @param x Output of [mahalanobis_rr()] (several scopes are faceted).
 #' @param censored_times_only See [plot_love_dynamic()].
 #' @return A ggplot object.
 #' @export
@@ -260,9 +252,9 @@ plot_mahalanobis <- function(x, censored_times_only = TRUE) {
                                        linetype = .data$method)) +
     ggplot2::geom_line(data = .multi_point(x, grp)) +
     ggplot2::geom_point(size = 1.2) +
-    ggplot2::labs(x = "Interval k", y = expression(M^RR * (k)),
+    ggplot2::labs(x = "Follow-up interval t", y = expression(M^RR * (t)),
                   colour = "Strategy", linetype = "Method",
-                  title = "Mahalanobis reconstruction balance") +
+                  title = "Global Mahalanobis reconstruction balance") +
     ggplot2::theme_bw()
   if (multi_scope) {
     p <- p + ggplot2::facet_wrap(~scope, scales = "free_y",
@@ -271,23 +263,23 @@ plot_mahalanobis <- function(x, censored_times_only = TRUE) {
   p
 }
 
-#' Diagnostic dashboard
+#' Combined CCW diagnostic dashboard
 #'
-#' Combines the dynamic Love plot (unweighted and weighted interval RRB),
-#' the heatmap of weighted interval RRB, the Mahalanobis plot, the
-#' weight-support plot and an ECDF plot. The panels are arranged with
-#' patchwork if installed, else with gridExtra; without either, the list of
-#' plots is returned.
+#' Computes and composes the dynamic Love plot (unweighted vs weighted), the
+#' weighted RRB heatmap with IAI/MaxIB margin, the Mahalanobis trajectory, the
+#' weight-support panel and a selected-time ECDF panel. Uses `patchwork` if
+#' installed, otherwise `gridExtra`; if neither is available, returns the list
+#' of ggplot objects.
 #'
-#' @param data Long data with weights (see [fit_censoring_model()]).
-#' @param features Feature columns for RRB and the Mahalanobis metric.
-#' @param ecdf_feature Feature of the ECDF plot.
-#' @param ecdf_strategy Strategy of the ECDF plot (default: last level).
-#' @param ecdf_times Intervals of the ECDF plot.
+#' @param data Weighted long clone data (see [fit_censoring_model()]).
+#' @param features Feature columns for RRB / Mahalanobis.
+#' @param ecdf_feature Feature for the ECDF panel.
+#' @param ecdf_strategy Strategy for the ECDF panel (default: last level).
+#' @param ecdf_times Times for the ECDF panel.
 #' @param title Optional title.
 #' @param ridge Ridge constant passed to [mahalanobis_rr()].
-#' @return A patchwork object, a gtable (gridExtra) or a named list of
-#'   ggplot objects; the plots are also attached as attribute `"plots"`.
+#' @return A patchwork object, a gtable (gridExtra) or a named list of plots.
+#'   The individual plots are always attached as attribute `"plots"`.
 #' @export
 #' @examples
 #' \donttest{

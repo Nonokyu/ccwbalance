@@ -159,11 +159,11 @@ test_that("run variants scenarios are well formed", {
   expect_equal(nrow(scenario_table(h)), 7)
 })
 
-test_that("paper_scenarios() follows Table 2 of the manuscript", {
+test_that("paper_scenarios() follows Table tab:grid of the manuscript", {
   ps <- paper_scenarios()
   ids <- c(sprintf("P1-%02d", 1:13), sprintf("P2-%02d", 1:6),
            sprintf("P3-%02d", 1:4))
-  # 23 scenarios in the row order of Table 2; no E ids
+  # 23 scenarios in the row order of Table tab:grid; no E ids
   expect_equal(ps$id, ids)
   expect_false(anyDuplicated(ps$id) > 0)
   expect_false(any(grepl("^E-", ps$id)))
@@ -194,7 +194,7 @@ test_that("paper_scenarios() follows Table 2 of the manuscript", {
     sum(!is.na(scenario_table(ccw_scenarios(r))$id))
   }, 0))
   expect_equal(n_id, nrow(ps))
-  # specs of Table 2: n, replicates, bootstrap resamples
+  # specs of Table tab:grid: n, replicates, bootstrap resamples
   expect_equal(ps$n, c(rep(2000, 13), 300, 8000, 2000, 2000, 300, 2000,
                        rep(2000, 4)))
   expect_equal(ps$n_rep, c(1000, rep(200, 12), 1000, 500, rep(200, 8)))

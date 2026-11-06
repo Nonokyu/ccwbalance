@@ -186,7 +186,7 @@ test_that("scope is validated and plots accept cumulative output", {
   expect_true("scope" %in% names(a))
 })
 
-test_that("weight_support gives NA weight summaries if nobody is retained", {
+test_that("weight_support returns NA weight summaries when nobody is retained", {
   d <- data.frame(strategy = "g", time = 0, censored_next = c(1, 1),
                   w_post = 2, pi_hat = 0.3)
   ws <- expect_silent(weight_support(d))
@@ -194,7 +194,7 @@ test_that("weight_support gives NA weight summaries if nobody is retained", {
   expect_equal(ws$n_retained, 0)
 })
 
-test_that("censoring_balance weight versions agree without truncation", {
+test_that("censoring_balance estimator weights match model without truncation", {
   d <- simulate_ccw(ccw_sim_params(n = 400), seed = 3)
   f <- ~ L + I(L^2) + X + L:X
   for (st in c(TRUE, FALSE)) {

@@ -18,16 +18,16 @@ rrb_boot(
 )
 }
 \arguments{
-\item{data}{Long data returned by \code{\link[=fit_censoring_model]{fit_censoring_model()}} (its
+\item{data}{Long clone data returned by \code{\link[=fit_censoring_model]{fit_censoring_model()}} (its
 \code{"weighting"} attribute supplies the model settings).}
 
-\item{features}{Character vector of feature columns \code{f(H_k)}.}
+\item{features}{Character vector of feature columns \code{f(H_t)}.}
 
 \item{B}{Number of bootstrap resamples.}
 
 \item{scope}{\code{"cumulative"} (default) or \code{"interval"} (see \code{\link[=rrb]{rrb()}}).}
 
-\item{method}{One RRB weighting method (see \code{\link[=rrb]{rrb()}}).}
+\item{method}{RRB weighting method (see \code{\link[=rrb]{rrb()}}); one method.}
 
 \item{seed}{Optional random seed.}
 
@@ -37,24 +37,29 @@ rrb_boot(
 \code{event}, \code{carry_events}).}
 }
 \value{
-A data frame with one row per observed strategy x interval x
-feature cell: \verb{strategy, time, feature, n_risk, rrb_obs, boot_mean, boot_se, lcl, ucl} (percentile 2.5\% and 97.5\% limits), \code{n_boot_ok}
-(resamples in which the cell's RRB is defined), \code{B} and \code{scope}. A cell
-absent from a resample is ignored in that resample.
+A data frame with one row per observed strategy x time x feature
+cell: \verb{strategy, time, feature, n_risk} (observed), \code{rrb_obs},
+\verb{boot_mean, boot_se, lcl, ucl} (percentile 2.5\% and 97.5\% limits),
+\code{n_boot_ok} (resamples in which the cell's RRB was defined), \code{B} and
+\code{scope}. Cells absent from a resample are \code{NA} in that resample and
+ignored in the summaries.
 }
 \description{
 Nonparametric bootstrap of the RRB trajectory (cumulative scope by
-default). Individuals are resampled with replacement, with all their rows
-under every strategy; each resampled individual gets a new identifier,
-so an individual drawn twice contributes two independent histories. The
-censoring model is refitted on each resample with the settings stored by
-\code{\link[=fit_censoring_model]{fit_censoring_model()}} (formula, numerator, model groups, stabilisation,
-truncation) and \code{\link[=rrb]{rrb()}} is recomputed.
+default, interval scope optionally) that propagates the full sampling
+variability: individuals are resampled with replacement (all clones of an
+individual move together), the censoring model is refitted on each
+resample with the settings stored by \code{\link[=fit_censoring_model]{fit_censoring_model()}} (formula,
+numerator, model groups, stabilisation, truncation) and \code{\link[=rrb]{rrb()}} is
+recomputed. Each resampled individual gets a new unique identifier, so
+an individual drawn twice contributes two independent clone histories
+(cumulative weights are formed within identifier x strategy).
 }
 \details{
-This is an uncertainty summary of the observed RRB, mainly for the
-cumulative scope, where the RRB of time-varying features is descriptive.
-For a zero-targeted reference of the interval scope see \code{\link[=rrb_null]{rrb_null()}}.
+Unlike \code{\link[=rrb_null]{rrb_null()}}, which is a conditional null reference for the
+interval scope, this is a sampling-distribution (uncertainty) summary of
+the observed RRB; it is mainly intended for the cumulative scope, where
+the RRB of time-varying features is descriptive rather than 0-targeted.
 }
 \examples{
 d <- simulate_ccw(ccw_sim_params(n = 300), seed = 1)

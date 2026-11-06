@@ -2,7 +2,7 @@
 % Please edit documentation in R/clone.R
 \name{ccw_sustained}
 \alias{ccw_sustained}
-\title{Sustained treatment strategy for ccw_clone()}
+\title{Sustained treatment strategy for \code{\link[=ccw_clone]{ccw_clone()}}}
 \usage{
 ccw_sustained(value = 1, grace = 0)
 }
@@ -16,20 +16,21 @@ treat).}
 An object of class \code{"ccw_sustained"}.
 }
 \description{
-Defines the strategy "receive treatment level \code{value} in every interval",
-optionally allowing up to \code{grace} consecutive non-adherent intervals. An
-individual deviates (\code{censored_next = 1}) in the first interval \code{k} in
-which its run of consecutive non-adherent intervals reaches \code{grace + 1}.
-Artificial censoring is therefore possible (phase \code{"sustain"}) in rows
-whose run of non-adherence up to interval \code{k - 1} (column \code{run_off})
-equals \code{grace}; rows with a shorter run get phase \code{"none"} and
-\code{censor_possible = FALSE}. With \code{grace = 0} every non-adherent interval
-is a deviation. The censoring model of phase \code{"sustain"} is a model for
-\code{P(A_k = value | H_k)}.
+Defines a strategy "receive treatment level \code{value} in every interval",
+optionally allowing up to \code{grace} consecutive non-adherent intervals.
+A clone deviates (is artificially censored, \code{censored_next = 1}) at the
+first interval \code{t} in which its run of consecutive non-adherent intervals
+reaches \code{grace + 1}. Artificial censoring is therefore possible in every
+interval (phase \code{"sustain"}) for rows whose run of non-adherence up to
+\code{t - 1} (column \code{run_off}) equals \code{grace}; rows with a shorter run can be
+non-adherent without deviating (phase \code{"none"},
+\code{censor_possible = FALSE}). With \code{grace = 0} every
+non-adherent interval is a deviation. The censoring model at phase
+\code{"sustain"} is \code{P(A_t = value | H_t)}.
 }
 \details{
-Within an interval the order is \code{L_k}, \code{A_k}, artificial censoring, loss
-to follow-up, outcome; a censored row has \code{event_next = NA}.
+Within an interval the ordering is \verb{L_t -> A_t -> D_\{t+1\}} (deviation)
+\verb{-> C^\{LTFU\}_\{t+1\} -> Y_\{t+1\}}; a censored row has \code{event_next = NA}.
 }
 \examples{
 ccw_sustained(1)

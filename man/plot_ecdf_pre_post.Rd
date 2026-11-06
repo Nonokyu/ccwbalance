@@ -2,7 +2,7 @@
 % Please edit documentation in R/plots.R
 \name{plot_ecdf_pre_post}
 \alias{plot_ecdf_pre_post}
-\title{ECDF before and after artificial censoring}
+\title{Selected-time ECDF panel: pre-censoring vs post-censoring (weighted)}
 \usage{
 plot_ecdf_pre_post(
   data,
@@ -17,30 +17,28 @@ plot_ecdf_pre_post(
 )
 }
 \arguments{
-\item{data}{Long data with weights (see \code{\link[=fit_censoring_model]{fit_censoring_model()}}).}
+\item{data}{Weighted long clone data.}
 
 \item{feature}{Feature column.}
 
 \item{strategy_level}{Strategy to display.}
 
-\item{times}{Intervals to display (default: the first four intervals
-with artificial censoring).}
+\item{times}{Times to display (default: times with censoring, up to 4).}
 
-\item{method}{Weighting method (see \code{\link[=rrb]{rrb()}}).}
+\item{method}{Weighting method for the reference / post side (see \code{\link[=rrb]{rrb()}}).}
 
 \item{strategy, time, censored}{Column names.}
 
-\item{...}{Weight column names (\code{w_ref}, \code{w_post}, \code{pi_hat}, \code{q_hat},
-\code{w_prev_unstab}, \code{w_prev_stab}), if different from the defaults.}
+\item{...}{Passed to the internal weight constructor (column names
+\code{w_ref}, \code{w_post}, \code{pi_hat}, \code{q_hat}, \code{w_prev_unstab}, \code{w_prev_stab}).}
 }
 \value{
 A ggplot object.
 }
 \description{
-For one feature, strategy and selected intervals, shows the weighted ECDF
-of the risk set before censoring (reference weights), the unweighted ECDF
-of the retained rows and the weighted ECDF of the retained rows (post
-weights), as in the interval scope of \code{\link[=rrb]{rrb()}}.
+Shows the reference (pre-artificial-censoring) ECDF, the unweighted ECDF
+of retained clones and the IPCW-weighted ECDF of retained clones for one
+feature at selected times.
 }
 \examples{
 d <- simulate_ccw(ccw_sim_params(n = 300), seed = 1)

@@ -2,26 +2,26 @@
 % Please edit documentation in R/plots.R
 \name{plot_love_dynamic}
 \alias{plot_love_dynamic}
-\title{Dynamic Love plot of RRB}
+\title{Dynamic Love plot of risk-set reconstruction balance}
 \usage{
 plot_love_dynamic(x, threshold = 0.1, censored_times_only = TRUE)
 }
 \arguments{
-\item{x}{Output of \code{\link[=rrb]{rrb()}}.}
+\item{x}{Output of \code{\link[=rrb]{rrb()}} (possibly with several methods and/or both
+scopes; with two scopes, panel rows are method x scope).}
 
-\item{threshold}{Height of a reference line (default 0.1); \code{NULL} for
-none.}
+\item{threshold}{Reference line (default 0.1); \code{NULL} for none.}
 
-\item{censored_times_only}{Keep only strata with artificial censoring
-(\code{n_censored > 0})?}
+\item{censored_times_only}{Keep only strategy x time cells where artificial
+censoring occurred (\code{n_censored > 0})?}
 }
 \value{
 A ggplot object.
 }
 \description{
-Plots \verb{|RRB_\{j,g\}(k)|} against the interval, one line per feature, with
-one panel column per strategy and one panel row per method (method x
-scope when \code{x} has both scopes).
+Plots \verb{|RRB_\{j,g\}(t)|} against follow-up time, one line per feature, with
+one panel row per method (e.g. unweighted selection vs IPCW-weighted
+reconstruction) and one column per strategy.
 }
 \examples{
 d <- simulate_ccw(ccw_sim_params(n = 300), seed = 1)

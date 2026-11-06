@@ -6,9 +6,10 @@ diagnostic is risk-set reconstruction balance (RRB). Interval RRB checks
 whether the retained individuals, reweighted by the inverse probability of
 remaining uncensored, reproduce the risk set just before artificial
 censoring. Cumulative RRB checks whether they reproduce the baseline
-population. The package also computes censoring balance, a null reference
-for the maximum absolute imbalance, between-strategy standardised mean
-differences, weight summaries and plots.
+population. The package also computes censoring balance, a conditional
+parametric null reference that judges each strategy by its studentised
+maximum imbalance, between-strategy standardised mean differences, weight
+summaries and plots.
 
 ## Installation
 
@@ -62,9 +63,22 @@ r <- rrb(w, feats, method = c("unweighted", "weighted"))
 r_cens <- r[r$n_censored > 0, ]
 aggregate_balance(r_cens, by = c("method", "feature"))
 
-# null reference for interval RRB, censoring balance and MaxIB
+# null reference for interval RRB and censoring balance
 nr <- rrb_null(w, feats, n_draws = 50, seed = 1)
-nr$maxib[nr$maxib$strategy == "(all)", ]
+# per stratum x history function: null SD and z = RRB / null SD
+head(nr$cells[, c("strategy", "time", "feature", "rrb_obs", "null_sd", "z",
+                  "cb_cens_z")])
+# per strategy: studentised maximum (largest |z| over its strata and
+# history functions) against its null 95th percentile
+st <- nr$maxib_stud[nr$maxib_stud$feature == "(all)" &
+                      nr$maxib_stud$strategy != "(all)", ]
+st$exceeds <- st$stud_obs > st$null_q95
+st
+# the same for censoring balance over the censorable individuals
+cb_st <- nr$maxib_cb_cens_stud
+cb_st[cb_st$feature == "(all)" & cb_st$strategy != "(all)", ]
+# raw maximum |RRB| (MaxIB), descriptive
+nr$maxib[nr$maxib$feature == "(all)", ]
 
 # cumulative RRB of baseline-fixed features, with bootstrap intervals
 rc <- rrb(w, c("X", "L_base"), scope = "cumulative")
@@ -109,28 +123,37 @@ plot_weight_support(ws)
 | `f(H_k)` | History function | argument `features` |
 | `RRB_{j,g}(k)` | Interval or cumulative RRB | `rrb(scope = )` |
 | `CB_{j,g}(k)` | Censoring balance | `censoring_balance(weighted = TRUE)`, `rrb_null()$cells$cb_obs` |
-| MaxIB | Maximum absolute imbalance over strata | `aggregate_balance()`, `rrb_null()$maxib` |
+| `z = RRB / SD_0` | RRB of a stratum in units of its null SD | `rrb_null()$cells$z` (`cb_cens_z` for censoring balance) |
+| studentised maximum | Largest `\|z\|` of a strategy over its strata and history functions (primary) | `rrb_null()$maxib_stud`, `$maxib_cb_cens_stud` |
+| MaxIB | Maximum absolute imbalance over strata (descriptive) | `aggregate_balance()`, `rrb_null()$maxib` |
 
 ## Zero targets
 
 * Interval RRB has target 0 for every history function `f(H_k)`, including
   post-baseline covariates, when the censoring model is correct and
-  positivity holds. `rrb_null()` gives its finite-sample null reference.
+  positivity holds. `rrb_null()` gives its finite-sample null reference:
+  for every stratum the null SD and `z = RRB / SD_0` of interval RRB and of
+  censoring balance (over all rows and over the censorable individuals),
+  and for every strategy the studentised maximum `max |z|` over its strata
+  and history functions with its null 95th percentile and exceedance
+  probability `p`. The studentised maximum is the primary summary; the raw
+  maximum `max |RRB|` (MaxIB) is reported as a descriptive summary.
 * Cumulative RRB has target 0 only for baseline-fixed features (`X`,
   `<v>_base`). For post-baseline covariates it is descriptive.
 * Between-strategy balance of post-baseline covariates, including the
   end-of-grace SMD, is descriptive and has no zero target.
 
 `aggregate_balance()` summarises all rows it is given; filter to the strata
-with artificial censoring (`n_censored > 0`) to obtain MaxIB as used in the
-manuscript.
+with artificial censoring (`n_censored > 0`) to obtain MaxIB over the same
+strata as `rrb_null()`.
 
 ## Reproducing the manuscript
 
-The folder `analysis/` holds the simulation study, the null-reference checks
-and the case study of the manuscript; `output/` holds the saved simulation
-outputs, so the tables and figures can be re-created without rerunning the
-simulations. Neither folder is part of the installed package. See
+The folder `analysis/` holds the simulation study, the supplementary checks
+and the case study of the manuscript; `data-raw/get_synpuf_claims.sh`
+extracts the claims of the case-study cohort; `output/` holds the saved
+simulation outputs, so the tables and figures can be re-created without rerunning the
+simulations. None of these folders is part of the installed package. See
 [`analysis/README.md`](analysis/README.md) for the required packages, the
 data, the run order and the outputs behind each table and figure.
 

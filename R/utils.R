@@ -39,8 +39,10 @@
   max(abs(.wecdf(x1, w1, at) - .wecdf(x2, w2, at)))
 }
 
-# Interval-scope weights: `.ref_w` for every at-risk row (reference) and
-# `.post_w` for retained rows (0 for rows with D_k = 1).
+# Build reference-side and post-censoring weights for a reconstruction
+# comparison. Returns data with `.ref_w` (weight of every at-risk row in the
+# pre-censoring reference) and `.post_w` (weight of retained rows; 0 for rows
+# censored in [t, t+1)).
 .rr_weights <- function(data, method, censored, w_ref, w_post, pi_hat, q_hat,
                         w_prev_unstab, w_prev_stab) {
   retained <- as.numeric(data[[censored]] == 0)

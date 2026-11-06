@@ -2,25 +2,24 @@
 % Please edit documentation in R/plots.R
 \name{plot_balance_heatmap}
 \alias{plot_balance_heatmap}
-\title{Balance heatmap with IAI and MaxIB margins}
+\title{Balance heatmap (feature x time) with IAI / MaxIB margin}
 \usage{
 plot_balance_heatmap(x, value = "rrb", censored_times_only = TRUE)
 }
 \arguments{
-\item{x}{Balance table with a single method and a single scope, e.g. the
-output of \code{\link[=rrb]{rrb()}} or \code{\link[=ks_rr]{ks_rr()}}.}
+\item{x}{Balance trajectory table (e.g. \code{\link[=rrb]{rrb()}} or \code{\link[=ks_rr]{ks_rr()}} output, a
+single method and a single scope).}
 
 \item{value}{Column to display in absolute value (\code{"rrb"} or \code{"ks"}).}
 
 \item{censored_times_only}{See \code{\link[=plot_love_dynamic]{plot_love_dynamic()}}.}
 }
 \value{
-A ggplot object.
+A ggplot object; the two right-most columns show IAI and MaxIB
+(computed with \code{\link[=aggregate_balance]{aggregate_balance()}} over the displayed times).
 }
 \description{
-Shows the absolute balance value by feature and interval, one panel per
-strategy, with two margin columns holding IAI and MaxIB computed by
-\code{\link[=aggregate_balance]{aggregate_balance()}} over the displayed intervals.
+Balance heatmap (feature x time) with IAI / MaxIB margin
 }
 \examples{
 d <- simulate_ccw(ccw_sim_params(n = 300), seed = 1)

@@ -2,7 +2,7 @@
 % Please edit documentation in R/weights.R
 \name{fit_censoring_model}
 \alias{fit_censoring_model}
-\title{Fit the artificial-censoring model and compute the weights}
+\title{Fit an artificial-censoring model and compute IPCW weights}
 \usage{
 fit_censoring_model(
   data,
@@ -20,70 +20,58 @@ fit_censoring_model(
 )
 }
 \arguments{
-\item{data}{Long data (see \link{ccwbalance-package}).}
+\item{data}{Long clone data (see \code{\link[=simulate_ccw]{simulate_ccw()}}).}
 
-\item{formula}{One-sided formula for the censoring model, e.g.
-\code{~ L + I(L^2) + X + L:X}, or a named list of formulas. For each model
-group the list element named by the full group label (e.g.
-\code{"g2.grace_end"}) is used, else the element named by the value of the
-last \code{by} column (e.g. \code{"no_init"}), else the element \code{"default"}.}
+\item{formula}{One-sided formula for the censoring (denominator) model, e.g.
+\code{~ L + I(L^2) + X + L:X}, or a named list of formulas chosen per model
+group: an element named by the full group label (e.g.
+\code{"g2.grace_end"}) is used first, then one named by the last \code{by}
+component (e.g. the phase \code{"no_init"}), then an element named
+\code{"default"}.}
 
-\item{numerator}{\code{NULL} (default; observed stratum proportion) or a
-one-sided formula for \code{q_k}, e.g. \code{~ factor(time)}.}
+\item{numerator}{\code{NULL} (default; nonparametric strategy x time proportion)
+or a one-sided formula for the stabilising numerator \code{q}, e.g.
+\code{~ factor(time) + X}.}
 
-\item{by}{Columns defining the groups in which separate censoring models
-are fitted.}
+\item{by}{Grouping columns within which separate models are fitted.}
 
-\item{stabilized}{Use stabilised weights for \code{w_ref} and \code{w_post}?}
+\item{stabilized}{Use stabilised weights for \code{w_ref}/\code{w_post}?}
 
-\item{truncate}{\code{NULL} (no truncation) or a quantile in (0, 1), e.g.
-\code{0.99}.}
+\item{truncate}{\code{NULL} or a quantile in (0, 1), e.g. \code{0.99}.}
 
 \item{id, strategy, time, censored, censor_possible}{Column names.}
 
-\item{pi_floor}{Lower bound applied to \code{pi_hat}.}
+\item{pi_floor}{Lower bound applied to \code{pi_hat} for numerical stability.}
 }
 \value{
-\code{data}, sorted by strategy, individual and interval, with added
-columns
-\itemize{
-\item \code{pi_hat} (\code{pi_k}) and \code{q_hat} (\code{q_k});
-\item \code{weight_unstab} (\code{W^u_k}), \code{weight_stab} (\code{W_k}) and their values in
-the previous interval, \code{w_prev_unstab} (\verb{W^u_\{k-1\}}) and
-\code{w_prev_stab} (\verb{W_\{k-1\}}), all untruncated;
-\item \code{weight} and \code{w_prev}: the chosen scheme's \code{W_k} and \verb{W_\{k-1\}},
-truncated if requested;
-\item \code{w_post} (= \code{weight}): the estimator weight of a retained row;
-\item \code{w_ref}: the reference weight \code{w_prev * q_hat} (stabilised) or
-\code{w_prev} (unstabilised);
-\item \code{weights_stabilized}: the value of \code{stabilized}.
-}
-
-The fitted models are attached as attribute \code{"models"} and the settings
-(formula, numerator, stabilisation, truncation, cap, groups) as
-attribute \code{"weighting"}.
+\code{data} with added columns \verb{pi_hat, q_hat, weight_unstab, weight_stab, w_prev_unstab, w_prev_stab, weight, w_prev, w_ref, w_post, weights_stabilized}.
+\code{w_post} is the (possibly truncated) cumulative weight \code{W_t} of the
+chosen scheme; \code{w_ref} is \verb{W_\{t-1\}} (times \code{q_t} if stabilised), i.e. the
+weight defining the pre-censoring reference risk set. The fitted models
+are attached as attribute \code{"models"}.
 }
 \description{
-Estimates \verb{pi_k = P(D_k = 0 | R_k = 1, H_k)} by logistic regression on the
-rows where artificial censoring is possible (\code{censor_possible}),
-separately within each group defined by \code{by} (default: strategy x
-phase). Rows where censoring cannot occur get \code{pi_hat = 1}.
+Estimates \verb{pi_hat = P(D_\{t+1\} = 0 | R_t = 1, H_t, G = g)} by logistic
+regression among rows where artificial censoring is possible
+(\code{censor_possible}), separately within the groups given by \code{by}
+(default: strategy x censoring phase). Rows where censoring cannot occur get
+\code{pi_hat = q_hat = 1}. Misspecification scenarios are obtained simply by
+supplying different right-hand-side formulas.
 }
 \details{
-The stabilising numerator \code{q_k} must be common to all individuals at risk
-in a stratum (strategy x interval). It is estimated on all at-risk rows of
-each strategy: with \code{numerator = NULL} (default) \code{q_k} is the observed
-proportion remaining uncensored in the stratum; with a formula it is a
-logistic model fitted per strategy on all at-risk rows, which should then
-contain only time terms (a covariate-dependent numerator is not common
-to the stratum).
+The stabilising numerator \code{q_t} must be common to all clones at risk in a
+strategy x time cell (otherwise the target population changes, e.g. clones
+that already initiated would be up-weighted relative to those facing
+censoring). It is therefore estimated on \strong{all} at-risk rows of each
+strategy: with \code{numerator = NULL} (default) \code{q_t} is the observed proportion
+of clones remaining uncensored in the strategy x time cell; with a formula
+it is a logistic model fitted per strategy on all at-risk rows (it should
+contain only baseline covariates and time terms).
 
-Cumulative weights are formed within individual x strategy:
-\verb{W^u_k = prod_\{l <= k\} 1 / pi_l} (unstabilised) and
-\verb{W_k = prod_\{l <= k\} q_l / pi_l} (stabilised). With \code{truncate}, the
-chosen cumulative weight is capped at that quantile of its distribution
-over the retained rows (\code{D_k = 0}), pooled over strategies and intervals;
-the cap is applied to both \code{w_post} and \code{w_prev}.
+Cumulative weights are \verb{W_t = prod_\{k <= t\} 1 / pi_k} (unstabilised) and
+\verb{W_t = prod_\{k <= t\} q_k / pi_k} (stabilised), computed within clone.
+Optional truncation caps the chosen cumulative weight at the given quantile
+of its distribution among retained rows (pooled over strategies and times).
 }
 \examples{
 d <- simulate_ccw(ccw_sim_params(n = 300), seed = 1)

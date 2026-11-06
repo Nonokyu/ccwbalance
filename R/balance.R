@@ -7,66 +7,63 @@
   invisible(TRUE)
 }
 
-#' Risk-set reconstruction balance (RRB)
+#' Risk-set Reconstruction Balance (RRB)
 #'
-#' For each strategy `g`, history feature `f_j(H_k)` and interval `k`,
-#' compares the weighted mean of the post set with the mean of the reference
-#' set, standardised by the reference-weighted standard deviation:
-#' \deqn{RRB_{j,g}(k) = (\mu^{post}_{j,g}(k) - \mu^{ref}_{j,g}(k)) /
-#'   s^{ref}_{j,g}(k).}
+#' For each strategy `g`, feature `j` and time `t`, compares a reference
+#' ("pre") distribution with the IPCW-weighted distribution of the clones
+#' retained after artificial censoring ("post"), standardised by the
+#' (reference-weighted) reference SD:
+#' \deqn{RRB_{j,g}(t) = \frac{\mu^{post,w}_{j,g}(t) - \mu^{pre}_{j,g}(t)}{s^{pre}_{j,g}(t)}.}
 #'
 #' ## Scope
-#' * `scope = "interval"` (default): the reference set is the risk set of
-#'   the stratum just before artificial censoring at the end of interval
-#'   `k`, and the post set is the rows retained (`D_k = 0`). Under a
-#'   correctly specified censoring model and positivity the target is 0 for
-#'   every history function `f(H_k)`, including post-baseline covariates.
-#' * `scope = "cumulative"`: the reference set is the unweighted risk set at
-#'   the first interval of the strategy (the baseline population). The post
-#'   set is the rows retained at `k`, weighted by the cumulative weight
-#'   `W_k`, together with the individuals who had the outcome while retained
-#'   in an earlier interval `tau < k` (`carry_events = TRUE`). These enter
-#'   with their feature values at `tau` and the weight `W_tau Q_k / Q_tau`,
-#'   that is, the weight at the event rescaled by the stratum numerators
-#'   `q_l`, `tau < l <= k` (with unstabilised weights the factor is 1). The
-#'   target is 0 only for baseline-fixed features (`X`, `<v>_base` from
-#'   [make_history_features()]) and only when loss to follow-up is absent or
-#'   weighted. For post-baseline features such as `L_k` the cumulative RRB
-#'   is descriptive.
+#' * `scope = "interval"` (default; local reconstruction): the reference is
+#'   the risk set at `t` just before artificial censoring in `[t, t+1)`, the
+#'   post set the clones retained after it. Under a correctly specified
+#'   censoring model and positivity the IPW identity
+#'   `E[I(D = 0) f(H_t) / pi(H_t)] = E[f(H_t)]` gives a target of 0 for
+#'   **every** history feature `f(H_t)`, including post-baseline `L_t`.
+#' * `scope = "cumulative"` (reconstruction of the baseline population): the
+#'   reference is the cloned population at baseline (first time of the
+#'   strategy, unweighted), the post set the clones retained at `t` weighted
+#'   by the full cumulative weight `W_t`, plus clones that had the outcome
+#'   while uncensored before `t` (carried forward with their weight and
+#'   feature values at the event; `carry_events = TRUE`). The target is 0
+#'   **only for baseline-fixed features** (`X`, `L_0` via `<v>_base` from
+#'   [make_history_features()]) and only if there is no loss to follow-up that
+#'   is left unweighted. For post-baseline features such as `L_t`,
+#'   cumulative RRB is **not** 0-targeted: `L_t` evolves over time and is
+#'   affected by treatment (`A_{t-1} -> L_t`), so a non-zero value is expected
+#'   even under correct weighting; it is descriptive only.
 #'
-#' ## Methods (reference / post weights)
-#' * `"unweighted"`: 1 / 1;
-#' * `"unstabilized"`: interval `W^u_{k-1}` / `W^u_{k-1} / pi_k`;
-#'   cumulative 1 / `W^u_k`;
-#' * `"stabilized"`: interval `W_{k-1} q_k` / `W_{k-1} q_k / pi_k`;
-#'   cumulative 1 / `W_k`. The rescaling of carried rows needs `q_hat` to be
-#'   constant within strata (the default numerator of
-#'   [fit_censoring_model()]); a warning is given otherwise;
-#' * `"weighted"`: the columns `w_ref` / `w_post` of [fit_censoring_model()]
-#'   (cumulative scope: 1 / `w_post`). With truncated weights this gives the
-#'   RRB of the weights used by the estimator. The interval RRB of the
-#'   untruncated model weight (post weight `w_ref / pi_hat`) is returned by
-#'   [rrb_null()] as `cells$rrb_obs`.
+#' ## Methods (weights on the reference / post side)
+#' * `"unweighted"`: 1 / 1 (the raw selection induced by artificial
+#'   censoring);
+#' * `"unstabilized"`: interval scope `W_{t-1}` / `W_{t-1} / pi_t`; cumulative
+#'   scope 1 / `W_t` (unstabilised);
+#' * `"stabilized"`: interval scope `W_{t-1} q_t` / `W_{t-1} q_t / pi_t` (as in
+#'   the report's formula); cumulative scope 1 / `W_t^s` (carried event clones
+#'   are extended with the cell numerators `q_k`, which requires the default
+#'   numerator of [fit_censoring_model()]; a warning is given otherwise);
+#' * `"weighted"`: columns `w_ref` / `w_post` as produced by
+#'   [fit_censoring_model()] (the chosen scheme, including truncation;
+#'   cumulative scope uses `w_post` only).
 #'
-#' @param data Long data with weights (see [fit_censoring_model()]).
-#' @param features Character vector of feature columns `f(H_k)`.
+#' @param data Long clone data with weights (see [fit_censoring_model()]).
+#' @param features Character vector of feature columns `f(H_t)`.
 #' @param method One or more of `"weighted"`, `"unweighted"`,
 #'   `"unstabilized"`, `"stabilized"`.
 #' @param scope One or more of `"interval"`, `"cumulative"`.
 #' @param strategy,time,censored Column names.
 #' @param w_ref,w_post,pi_hat,q_hat,w_prev_unstab,w_prev_stab Weight column
-#'   names (see [fit_censoring_model()]).
-#' @param event Outcome column used to carry individuals with the outcome
-#'   forward (cumulative scope).
-#' @param carry_events Carry individuals with the outcome forward
-#'   (cumulative scope)?
+#'   names.
+#' @param event Outcome column used to carry event clones forward in the
+#'   cumulative scope.
+#' @param carry_events Carry forward clones with the outcome (cumulative
+#'   scope)?
 #' @return A data frame with `strategy, time, feature, method, scope, n_risk,
-#'   n_censored, mean_pre, mean_post, sd_pre, rrb` (`mean_pre` and `sd_pre`
-#'   refer to the reference set). In the interval scope `n_risk` and
-#'   `n_censored` are the stratum counts; in the cumulative scope `n_risk` is
-#'   the baseline size and `n_censored` the number artificially censored up
-#'   to and including interval `k`. `rrb` is `NA` when the reference
-#'   standard deviation is 0.
+#'   n_censored, mean_pre, mean_post, sd_pre, rrb`. For the cumulative scope
+#'   `n_risk` is the baseline number of clones and `n_censored` the
+#'   cumulative number artificially censored up to and including `t`.
 #' @export
 #' @examples
 #' d <- simulate_ccw(ccw_sim_params(n = 300), seed = 1)
@@ -121,12 +118,12 @@ rrb <- function(data, features, method = "weighted", scope = "interval",
   invisible(TRUE)
 }
 
-#' Weighted Kolmogorov-Smirnov reconstruction distance (KS^RR)
+#' Weighted-ECDF Kolmogorov-Smirnov reconstruction distance (KS^RR)
 #'
-#' \deqn{KS^{RR}_{j,g}(k) = \sup_x |F^{post}_{j,g,k}(x) - F^{ref}_{j,g,k}(x)|,}
-#' the largest distance between the weighted empirical distribution
-#' functions of the post and reference sets of [rrb()] (same scopes, methods
-#' and zero targets).
+#' \deqn{KS^{RR}_{j,g}(t) = \sup_x |F^{post,w}_{j,g,t}(x) - F^{pre}_{j,g,t}(x)|}
+#' using the same reference / post sets and weights as [rrb()] (see there for
+#' the `"interval"` and `"cumulative"` scopes and which features are
+#' 0-targeted in each).
 #'
 #' @inheritParams rrb
 #' @return A data frame with `strategy, time, feature, method, scope, n_risk,
@@ -173,16 +170,16 @@ ks_rr <- function(data, features, method = "weighted", scope = "interval",
                         "n_risk", "n_censored", "ks")])
 }
 
-#' Mahalanobis reconstruction balance (M^RR)
+#' Mahalanobis global reconstruction balance (M^RR)
 #'
-#' \deqn{M^{RR}_g(k) = \Delta_g(k)^\top \Sigma_{g,k}^{-1} \Delta_g(k),}
-#' where `Delta_g(k)` is the vector of differences between the post and
-#' reference means of the features and `Sigma_{g,k}` the reference-weighted
-#' covariance matrix of the reference set (sets and methods as in [rrb()]).
-#' Features with reference variance below `1e-10` in a stratum are dropped
-#' there. With `ridge > 0`, `Sigma + ridge * mean(diag(Sigma)) * I` is
-#' inverted. In the cumulative scope the target is 0 only when all features
-#' are baseline-fixed.
+#' \deqn{M^{RR}_g(t) = \Delta_g(t)^\top \Sigma^{-1}_{g,t,ref} \Delta_g(t),
+#'   \quad \Delta_g(t) = \mu^{post,w}_g(t) - \mu^{pre}_g(t),}
+#' where `Sigma` is the reference-weighted covariance of the reference set
+#' (see [rrb()] for the `"interval"` / `"cumulative"` scopes). Features with
+#' (near) zero reference variance at a given time are dropped. Optional ridge
+#' regularisation uses `Sigma + ridge * mean(diag(Sigma)) * I`. In the
+#' cumulative scope the metric is 0-targeted only when all features are
+#' baseline-fixed.
 #'
 #' @inheritParams rrb
 #' @param ridge Non-negative ridge constant (0 = none).
@@ -252,19 +249,18 @@ mahalanobis_rr <- function(data, features, method = "weighted", ridge = 0,
   out
 }
 
-#' Between-strategy balance (standardised mean differences)
+#' Strategy-balance (descriptive dynamic strategy-risk-set contrast)
 #'
-#' \deqn{SMD_{j}(g, k) = (\mu_{j,g}(k) - \mu_{j,g_0}(k)) /
-#'   \sqrt{(s^2_{j,g}(k) + s^2_{j,g_0}(k)) / 2}}
-#' compares each strategy `g` with a reference strategy `g_0` in every
-#' interval. With `weighted = TRUE` the means and variances are over the
-#' rows retained in interval `k` (`D_k = 0`), weighted by `w_post`; with
-#' `weighted = FALSE` they are unweighted over the at-risk rows. The
-#' end-of-grace SMD is the weighted value in the first interval after the
-#' grace period. For post-baseline covariates affected by earlier treatment
-#' this contrast is descriptive and has no zero target.
+#' \deqn{B^S_j(t) = \frac{\mu^w_{j,g}(t) - \mu^w_{j,g'}(t)}{s_{j,ref}}}
+#' comparing each strategy with a reference strategy at each time, where
+#' `s_ref` is the square root of the average of the two (weighted) variances.
+#' With `weighted = TRUE` the means are over clones retained after artificial
+#' censoring at `t`, weighted by `w_post`; with `weighted = FALSE` they are
+#' unweighted means over the at-risk rows. For post-baseline covariates
+#' affected by earlier treatment this is **descriptive only** and is not a
+#' zero-balance target (see the report).
 #'
-#' @param data Long data (with weights if `weighted = TRUE`).
+#' @param data Long clone data.
 #' @param features Feature columns.
 #' @param reference Reference strategy (default: first level).
 #' @param weighted Logical.
@@ -275,9 +271,6 @@ mahalanobis_rr <- function(data, features, method = "weighted", ridge = 0,
 #' @examples
 #' d <- simulate_ccw(ccw_sim_params(n = 300), seed = 1)
 #' head(strategy_balance(d, c("X", "L"), weighted = FALSE))
-#' w <- fit_censoring_model(d, ~ L + I(L^2) + X + L:X)
-#' sb <- strategy_balance(w, "X", reference = "g1")
-#' sb[sb$time == 3, ]
 strategy_balance <- function(data, features, reference = NULL,
                              weighted = TRUE, strategy = "strategy",
                              time = "time", censored = "censored_next",
@@ -324,40 +317,61 @@ strategy_balance <- function(data, features, reference = NULL,
 
 #' Censoring balance (after Jackson)
 #'
-#' Within each stratum, compares the rows censored at the end of interval
-#' `k` (`D_k = 1`) with the retained rows (`D_k = 0`):
-#' \deqn{CB_{j,g}(k) = (\mu_{j,g,k}(D_k = 1) - \mu_{j,g,k}(D_k = 0)) /
-#'   s_{j,g,k}.}
-#' With `weighted = FALSE` the means and the standard deviation `s` of the
-#' stratum are unweighted. With `weighted = TRUE` each row is weighted by
-#' the inverse probability of its observed censoring status:
-#' * `weights = "model"` (default): censored rows get
-#'   `W^u_{k-1} / (1 - pi_k)` and retained rows `W^u_{k-1} / pi_k`, where
-#'   `W^u_{k-1}` is the untruncated, unstabilised earlier weight
-#'   (`w_prev_unstab`); `s` is `W^u_{k-1}`-weighted. This version checks the
-#'   fitted censoring model and is not affected by truncation.
-#' * `weights = "estimator"`: retained rows get `w_post` (the possibly
-#'   truncated `W_k` of the estimator) and censored rows
-#'   `min(w_ref / (1 - pi_k), cap)`; `s` is `w_ref`-weighted.
+#' Within each strategy x time, compares clones censored in the next interval
+#' (`D_{t+1} = 1`) with those retained (`D_{t+1} = 0`):
+#' \deqn{B^C_{j,g}(t) = \frac{\mu_{j,g,t}(D_{t+1}=1) - \mu_{j,g,t}(D_{t+1}=0)}{s_{j,g,t}}.}
+#' With `weighted = TRUE` each clone is weighted by the inverse probability of
+#' its observed censoring status, so that balance is expected under a correct
+#' model; `s` is the reference-weighted SD of the at-risk set. Two weight
+#' versions are available (`weights`):
+#' * `"model"` (default): censored rows get `W_{t-1} / (1 - pi_t)` and
+#'   retained rows `W_{t-1} / pi_t`, with the untruncated unstabilised
+#'   `W_{t-1}` (`w_prev`); `s` is `W_{t-1}`-weighted. This checks the fitted
+#'   censoring model only and cannot respond to weight truncation.
+#' * `"estimator"`: retained rows get `w_post` (the possibly truncated
+#'   cumulative weight `W_t` actually used by the estimator, i.e. the same
+#'   post weights as `rrb(method = "weighted")`), censored rows
+#'   `min(w_ref / (1 - pi_t), cap)`, where `w_ref` is the truncated
+#'   `W_{t-1}` (times `q_t` when stabilised) and `cap` the truncation cap of
+#'   [fit_censoring_model()]; `s` is `w_ref`-weighted (the reference weights
+#'   of [rrb()]).
 #'
-#' Without truncation both versions give the same values. `1 - pi_k` is
-#' floored at `1e-6`. Only strata with at least one censored and one
-#' retained row are returned. Loss to follow-up can be examined with
-#' `censored = "ltfu_next"` (unweighted).
+#' Without truncation the two versions coincide: with unstabilised weights
+#' the weights are identical, and with stabilised weights (default numerator,
+#' common to all clones of a strategy x time cell) they differ only by the
+#' cell-constant factor `prod_{k <= t} q_k`, which cancels in the weighted
+#' means and SD.
 #'
-#' @param data Long data (with weights if `weighted = TRUE`).
+#' With `rows = "censorable"` only rows at which artificial censoring is
+#' possible (`censor_possible == TRUE`) enter the censored and the retained
+#' group; rows that cannot be censored in the next interval (e.g. clones of
+#' individuals who already initiated, with `pi_t = 1`) are dropped from the
+#' retained group. The standardising SD `s` is still computed over the whole
+#' at-risk set (with the weights described above), so that `"all"` and
+#' `"censorable"` share the same scale.
+#'
+#' Only strategy x time cells with at least one censored and one retained
+#' clone (among the rows selected by `rows`) are returned. The same function
+#' can be applied to loss to follow-up via `censored = "ltfu_next"` (unweighted).
+#'
+#' @param data Long clone data.
 #' @param features Feature columns.
 #' @param weighted Logical.
 #' @param weights `"model"` or `"estimator"` (used when `weighted = TRUE`).
 #' @param strategy,time,censored,pi_hat,w_prev,w_ref,w_post Column names
 #'   (`w_prev` is used by `weights = "model"`, `w_ref` and `w_post` by
 #'   `weights = "estimator"`).
-#' @param cap Truncation cap for the censored-row weights of
+#' @param rows `"all"` (default; every row of the risk set) or
+#'   `"censorable"` (only rows with `censor_possible == TRUE` enter the two
+#'   groups; see Details).
+#' @param censor_possible Column flagging rows at which artificial
+#'   censoring is possible (used by `rows = "censorable"`).
+#' @param cap Truncation cap for the censored-clone weights of
 #'   `weights = "estimator"`; `NULL` (default) takes
 #'   `attr(data, "weighting")$cap` (`Inf` if absent).
 #' @return A data frame with `strategy, time, feature, weighted, weights,
 #'   n_censored, n_retained, mean_censored, mean_retained, sd, smd`
-#'   (`weights` is `NA` when unweighted).
+#'   (`weights` is `"model"` or `"estimator"`, `NA` when unweighted).
 #' @export
 #' @examples
 #' d <- simulate_ccw(ccw_sim_params(n = 300), seed = 1)
@@ -370,10 +384,19 @@ censoring_balance <- function(data, features, weighted = FALSE,
                               strategy = "strategy", time = "time",
                               censored = "censored_next", pi_hat = "pi_hat",
                               w_prev = "w_prev_unstab", w_ref = "w_ref",
-                              w_post = "w_post", cap = NULL) {
+                              w_post = "w_post", cap = NULL,
+                              rows = c("all", "censorable"),
+                              censor_possible = "censor_possible") {
   weights <- match.arg(weights)
-  .check_cols(data, c(strategy, time, censored, features))
+  rows <- match.arg(rows)
+  .check_cols(data, c(strategy, time, censored, features,
+                      if (rows == "censorable") censor_possible))
   cen <- data[[censored]] == 1
+  poss <- if (rows == "censorable") {
+    as.logical(data[[censor_possible]]) %in% TRUE
+  } else {
+    rep(TRUE, nrow(data))
+  }
   if (weighted && weights == "model") {
     .check_cols(data, c(pi_hat, w_prev))
     p <- data[[pi_hat]]
@@ -396,20 +419,23 @@ censoring_balance <- function(data, features, weighted = FALSE,
   }
   wlab <- if (weighted) weights else NA_character_
   long <- data.frame(strategy = data[[strategy]], time = data[[time]],
-                     .cen = cen, .w = data$.w, .w0 = data$.w0,
-                     data[, features, drop = FALSE], check.names = FALSE) |>
+                     .cen = cen, .poss = poss, .w = data$.w,
+                     .w0 = data$.w0, data[, features, drop = FALSE],
+                     check.names = FALSE) |>
     tidyr::pivot_longer(dplyr::all_of(features), names_to = "feature",
                         values_to = ".value")
   long <- long[!is.na(long$.value), , drop = FALSE]
   out <- long |>
     dplyr::group_by(.data$strategy, .data$time, .data$feature) |>
-    dplyr::filter(any(.data$.cen), any(!.data$.cen)) |>
+    dplyr::filter(any(.data$.cen & .data$.poss),
+                  any(!.data$.cen & .data$.poss)) |>
     dplyr::summarise(
-      n_censored = sum(.data$.cen),
-      n_retained = sum(!.data$.cen),
-      mean_censored = .wmean(.data$.value[.data$.cen], .data$.w[.data$.cen]),
-      mean_retained = .wmean(.data$.value[!.data$.cen],
-                             .data$.w[!.data$.cen]),
+      n_censored = sum(.data$.cen & .data$.poss),
+      n_retained = sum(!.data$.cen & .data$.poss),
+      mean_censored = .wmean(.data$.value[.data$.cen & .data$.poss],
+                             .data$.w[.data$.cen & .data$.poss]),
+      mean_retained = .wmean(.data$.value[!.data$.cen & .data$.poss],
+                             .data$.w[!.data$.cen & .data$.poss]),
       sd = sqrt(.wvar(.data$.value, .data$.w0)),
       .groups = "drop"
     ) |>
@@ -427,21 +453,21 @@ censoring_balance <- function(data, features, weighted = FALSE,
                         "mean_retained", "sd", "smd")])
 }
 
-#' Aggregate balance over intervals: IAI and MaxIB
+#' Time aggregation of balance trajectories: IAI and MaxIB
 #'
-#' \deqn{IAI = \sum_k v_k |B(k)| / \sum_k v_k, \qquad MaxIB = \max_k |B(k)|,}
-#' with equal interval weights `v_k = 1` by default or a column of weights
-#' (e.g. risk-set size). The summaries are taken over all rows of `x` with a
-#' non-missing value. To obtain MaxIB over the strata with artificial
-#' censoring, filter `x` first, e.g. `x[x$n_censored > 0, ]`.
+#' \deqn{IAI = \frac{\sum_t q(t) |B(t)|}{\sum_t q(t)}, \qquad
+#'   MaxIB = \max_t |B(t)|}
+#' with equal time weights `q(t) = 1` by default (recommended primary
+#' analysis); a column of time weights (e.g. risk-set size or ESS) can be
+#' supplied for secondary analyses.
 #'
-#' @param x Balance table, e.g. the output of [rrb()].
+#' @param x Balance trajectory table (e.g. output of [rrb()]).
 #' @param value Column holding the balance value (e.g. `"rrb"`, `"ks"`,
 #'   `"smd"`, `"mahalanobis"`).
 #' @param by Grouping columns (those absent from `x` are ignored).
-#' @param time Interval column.
+#' @param time Time column.
 #' @param time_weight `NULL` (equal weights) or a column name.
-#' @param times Optional subset of intervals.
+#' @param times Optional subset of times to aggregate over.
 #' @return A data frame with the grouping columns and `n_times, iai, maxib,
 #'   time_at_max`.
 #' @export
@@ -472,25 +498,22 @@ aggregate_balance <- function(x, value = "rrb",
   as.data.frame(out)
 }
 
-#' Weight support and positivity summaries
+#' Weight-support and positivity diagnostics by strategy x time
 #'
-#' For each stratum: risk-set size, number retained, effective sample size
-#' `ESS = (sum w)^2 / sum w^2` of the retained rows, `ESS / n_risk`,
-#' normalised entropy `-sum p log p / log N` of the positive retained
-#' weights (`p = w / sum w`), and the mean, 95th and 99th percentiles and
-#' maximum of the retained weights. The `pi_hat` summaries (minimum, 1st
-#' and 5th percentiles and the proportion below `pi_threshold`) are over all
-#' at-risk rows, including rows where censoring is not possible
-#' (`pi_hat = 1`). These summaries can signal, but not establish, a lack of
-#' positivity.
+#' For each strategy and time: risk-set size, number retained, effective
+#' sample size `ESS = (sum w)^2 / sum w^2` of the retained clones, ESS ratio
+#' `ESS / N_risk`, normalised weight entropy
+#' `-sum p log p / log N` (`p = w / sum w`), `pi_hat` summaries over the
+#' at-risk rows (min, 1st and 5th percentiles, `Pr(pi_hat < 0.05)`), and
+#' weight quantiles (mean, 95th, 99th, max). These are weight-concentration /
+#' support metrics, not balance metrics; they can signal but not prove
+#' positivity failure.
 #'
-#' @param data Long data with weights (see [fit_censoring_model()]).
-#' @param weight Weight column of the retained rows.
+#' @param data Weighted long clone data.
+#' @param weight Weight column of retained clones.
 #' @param strategy,time,censored,pi_hat Column names.
-#' @param pi_threshold Threshold for the proportion of small `pi_hat`.
-#' @return A data frame with `strategy, time, n_risk, n_retained, ess,
-#'   ess_ratio, entropy, pi_min, pi_p01, pi_p05, pr_pi_small, w_mean, w95,
-#'   w99, w_max`.
+#' @param pi_threshold Threshold for `Pr(pi_hat < threshold)`.
+#' @return A data frame of diagnostics.
 #' @export
 #' @examples
 #' d <- simulate_ccw(ccw_sim_params(n = 300), seed = 1)

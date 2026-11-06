@@ -2,28 +2,27 @@
 # Conditional parametric null reference for the interval RRB / MaxIB
 # (rrb_null()) applied to the Webster-Clark SynPUF example (analysis/03).
 #
-# Data preparation and censoring models are identical to
-# analysis/03_empirical_webster_clark.R (sections 1-2; no bootstrap).
+# Data preparation (analysis/wc_data.R) and the base censoring model (age,
+# sex, renal) are identical to analysis/03_empirical_webster_clark.R; the
+# null reference covers the eleven history functions (five baseline
+# covariates, the three time-varying claims indicators and the three depth
+# functions fill_lag, fill_30, fill_cum, which enter no censoring model).
+# Two maxima per strategy x function: the raw MaxIB (max |RRB|, $maxib) and
+# the studentised maximum (max |RRB| / null SD of the cell, $maxib_stud),
+# each against the null 95th percentile of the same maximum.
 #
 # Outputs (git-ignored):
-#   output/empirical/wc_rrb_null_cells.csv, wc_rrb_null_maxib.csv
+#   output/empirical/wc_rrb_null_cells.csv, wc_rrb_null_maxib.csv,
+#   wc_rrb_null_maxib_stud.csv
 #
 # Run from the project root:  Rscript analysis/03b_wc_null_reference.R
 #   NULL_DRAWS (default 500)
 
 if (!file.exists("DESCRIPTION")) stop("Run this script from the project root.")
-data_file <- file.path("data-raw", "webster_clark", "Data",
-                       "baseccwcohort.sas7bdat")
-if (!file.exists(data_file)) {
-  stop("Data not found: ", data_file, "\nRun:\n  git clone ",
-       "https://github.com/mawcpharmdphd/CCW_tutorial data-raw/webster_clark")
-}
 suppressMessages(pkgload::load_all(".", quiet = TRUE))
+source(file.path("analysis", "wc_data.R"))
 
 N_DRAWS <- as.numeric(Sys.getenv("NULL_DRAWS", "500"))
-DELTA <- 10
-HORIZON <- 180
-K <- HORIZON / DELTA
 out_dir <- file.path("output", "empirical")
 dir.create(out_dir, recursive = TRUE, showWarnings = FALSE)
 save_csv <- function(x, name) {
@@ -31,43 +30,18 @@ save_csv <- function(x, name) {
 }
 t_start <- Sys.time()
 
-# 1. Webster-Clark cohort and censoring model (as in analysis/03) -------------
-raw <- haven::read_sas(data_file)
-cohort <- data.frame(
-  id = seq_len(nrow(raw)), ID = raw$ID,
-  age = raw$baseline_age,
-  female = as.numeric(raw$sex == "2"),
-  renal = as.numeric(raw$renal == "Y"),
-  race_black = as.numeric(raw$race == "2"),
-  race_other = as.numeric(raw$race %in% c("3", "5")),
-  rx = raw$RX_start, fu = raw$followup, outcome = raw$outcome
-)
-day_to_int <- function(d) floor(d / DELTA)
-cohort$init_time <- ifelse(is.na(cohort$rx) | cohort$rx >= HORIZON, Inf,
-                           day_to_int(cohort$rx))
-cohort$event_time <- ifelse(cohort$outcome == 1 & cohort$fu <= HORIZON,
-                            pmin(day_to_int(cohort$fu), K - 1), Inf)
-cohort$ltfu_time <- ifelse(cohort$outcome == 0 & cohort$fu < HORIZON,
-                           day_to_int(cohort$fu), Inf)
-
-covs <- c("age", "female", "renal", "race_black", "race_other")
-w30 <- day_to_int(30)
-w90 <- day_to_int(90)
-strategies <- list("0_30" = c(0, w30 - 1), "0_90" = c(0, w90 - 1),
-                   "30_90" = c(w30, w90 - 1), "no_0_90" = c(NA, w90 - 1))
-long <- ccw_clone(cohort, strategies, n_time = K, covariates = covs)
-formulas <- list(
-  no_init = ~ age + female + renal + time + I(time^2),
-  grace_end = ~ age + female + renal
-)
-w <- fit_censoring_model(long, formulas, stabilized = TRUE)
+# 1. Webster-Clark data and base censoring model (as in analysis/03) ----------
+wc <- wc_prepare(delta = 10, horizon = 180)
+feats <- wc$feats
+w <- fit_censoring_model(wc$long, wc$formulas$base, stabilized = TRUE)
 
 # 2. Null reference ------------------------------------------------------------
 t0 <- Sys.time()
-r0 <- rrb_null(w, covs, n_draws = N_DRAWS, seed = 20260925)
+r0 <- rrb_null(w, feats, n_draws = N_DRAWS, seed = 20260925)
 t_wc <- difftime(Sys.time(), t0, units = "secs")
 save_csv(r0$cells, "wc_rrb_null_cells.csv")
 save_csv(r0$maxib, "wc_rrb_null_maxib.csv")
+save_csv(r0$maxib_stud, "wc_rrb_null_maxib_stud.csv")
 
 show_cells <- function(r, g, tt) {
   x <- r$cells[as.character(r$cells$strategy) == g & r$cells$time == tt,
@@ -83,10 +57,18 @@ frac_z <- function(r) {
 
 cat(sprintf("\n=== Webster-Clark: rrb_null(), %d draws (%.1f s) ===\n",
             N_DRAWS, as.numeric(t_wc)))
+cat("\nMaxIB of fill, the depth functions, race_other and all features",
+    "(observed vs null):\n")
+print(r0$maxib[r0$maxib$feature %in% c("fill", wc$depth, "race_other",
+                                       "(all)"), ],
+      digits = 3, row.names = FALSE)
+cat("\nStudentised maximum max|z| of the same functions and outpt",
+    "(observed vs null):\n")
+print(r0$maxib_stud[r0$maxib_stud$feature %in%
+                      c("fill", wc$depth, "race_other", "outpt", "(all)"), ],
+      digits = 3, row.names = FALSE)
 cat("\nInterval ending day 90 (time 8), strategy 0_90:\n")
 show_cells(r0, "0_90", 8)
-cat("\nInterval ending day 90 (time 8), strategy 30_90:\n")
-show_cells(r0, "30_90", 8)
 cat("\nInterval ending day 30 (time 2), strategy 0_30:\n")
 show_cells(r0, "0_30", 2)
 cat("\nMaxIB (observed vs conditional null):\n")

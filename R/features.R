@@ -1,26 +1,25 @@
-#' Build history features f(H_k)
+#' Build history features f(H_t) for balance diagnostics
 #'
-#' Adds transformed history features `f(H_k)` for the diagnostics: squares
-#' `L_k^2`, lag products `L_k L_{k-1}`, differences `L_k - L_{k-1}`,
-#' cumulative means, threshold indicators `I(L_k > c)`, baseline values
-#' `L_0` and pairwise interactions. Baseline values are baseline-fixed, so
-#' their cumulative RRB is zero-targeted (see [rrb()]).
+#' Adds transformed history features used as `f(H_t)` in the reconstruction
+#' diagnostics: squares `L_t^2`, lag products `L_t L_{t-1}`, differences
+#' `Delta L_t = L_t - L_{t-1}`, cumulative means, threshold indicators
+#' `I(L_t > c)`, baseline values `L_0` (for cumulative RRB, which is
+#' 0-targeted only for baseline-fixed features) and pairwise interactions.
 #'
-#' Lags are taken within individual x strategy after ordering by `time`. An
-#' existing column `<v>_lag` (as returned by [simulate_ccw()]) is used as
-#' `L_{k-1}`; otherwise the lag is computed and set to the current value in
-#' the first row, so that `L_0 - L_{-1} = 0`.
+#' Lags are computed within clone (`id` x `strategy`) after ordering by time.
+#' If a `<var>_lag` column already exists (as produced by [simulate_ccw()]) it
+#' is used as `L_{t-1}`; otherwise the lag is computed and, at the first row,
+#' set equal to the current value (so `Delta L_0 = 0`).
 #'
-#' @param data Long data (see [ccwbalance-package]).
+#' @param data Long clone data.
 #' @param vars Time-varying covariates to transform.
-#' @param thresholds Numeric vector of cut-offs `c` for `I(L_k > c)`.
+#' @param thresholds Numeric vector of cut-offs `c` for `I(L_t > c)`.
 #' @param interactions List of character pairs, e.g. `list(c("L", "X"))`.
-#' @param baseline Add `<v>_base`, the value of `<v>` in the first row of the
-#'   individual under the strategy?
+#' @param baseline Add `<v>_base`, the value of `<v>` at the clone's first
+#'   time (baseline-fixed feature)?
 #' @param id,strategy,time Column names.
-#' @return `data`, sorted by strategy, individual and interval, with added
-#'   columns `<v>_sq`, `<v>_lagprod`, `<v>_diff`, `<v>_cummean`, `<v>_gt<c>`,
-#'   `<v>_base` and `<a>_x_<b>`.
+#' @return `data` with added columns `<v>_sq`, `<v>_lagprod`, `<v>_diff`,
+#'   `<v>_cummean`, `<v>_gt<c>`, `<v>_base` and `<a>_x_<b>`.
 #' @export
 #' @examples
 #' d <- simulate_ccw(ccw_sim_params(n = 100), seed = 1)

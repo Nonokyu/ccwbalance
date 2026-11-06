@@ -1,15 +1,18 @@
-# Reference and post sets of the reconstruction diagnostics.
+# Internal: construction of reference / post comparison sets ----------------
 #
-# Returns a list with `frame` (strategy, time, .ref_w, .post_w and the
-# features; a row may belong to the reference set, the post set or both)
-# and `counts` (strategy, time, n_risk, n_censored).
+# `.rr_frame()` returns a list with
+#   frame  : data frame with columns strategy, time (target time), .ref_w,
+#            .post_w and the feature columns. A row may belong to the
+#            reference set (.ref_w > 0), the post set (.post_w > 0) or both.
+#   counts : strategy, time, n_risk, n_censored for the target cells.
 #
-# Interval scope: reference = risk set of the stratum, post = rows retained
-# after artificial censoring (see .rr_weights()).
-# Cumulative scope: reference = unweighted risk set at the first interval of
-# the strategy, post = rows retained at k weighted by W_k, plus rows with
-# the outcome while retained in an earlier interval tau (feature values of
-# that row; weight W_tau, times Q_k / Q_tau for stabilised weights).
+# scope = "interval": reference = at-risk set at t, post = clones retained
+#   after artificial censoring in [t, t+1) (see .rr_weights()).
+# scope = "cumulative": reference = baseline (first time) cloned population of
+#   the strategy, post = clones retained at t weighted by the full cumulative
+#   weight W_t, plus clones that experienced the outcome while uncensored
+#   before t (carried forward with the weight and feature values of their
+#   event row; `carry_events = TRUE`).
 
 .rr_frame <- function(data, features, method, scope, strategy, time,
                       censored, w_ref, w_post, pi_hat, q_hat, w_prev_unstab,
@@ -39,7 +42,7 @@
   .check_cols(data, c(strategy, time, censored))
   n <- nrow(data)
   ret <- data[[censored]] == 0
-  # cumulative weight W_k of each row and whether it is stabilised
+  # cumulative weight W_t of each row and whether it is stabilised
   stab <- FALSE
   if (method == "unweighted") {
     W <- rep(1, n)
@@ -60,7 +63,7 @@
   }
   sv <- data[[strategy]]
   tv <- data[[time]]
-  # stratum numerators q_k, used to rescale carried stabilised weights
+  # cell-level numerator q-bar(strategy, time) for carrying stabilised weights
   if (stab) {
     .check_cols(data, q_hat)
     qrange <- stats::ave(data[[q_hat]], sv, tv,
@@ -100,7 +103,7 @@
       carry <- ig[ev[ig] & tv[ig] < tt]
       carry_w <- W[carry]
       if (stab && length(carry) > 0) {
-        # W_tau Q_k / Q_tau
+        # extend with cell numerators for k in (s, t]
         cq <- cumprod(qbar)
         tn <- names(qbar)
         idx_t <- match(as.character(tt), tn)

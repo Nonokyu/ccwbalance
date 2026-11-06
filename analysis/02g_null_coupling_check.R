@@ -13,9 +13,15 @@
 # For each replicate (or the cohort) the script reports
 #   * tied groups: number, fraction of censorable rows in tied groups, and
 #     the within-group range of p (max p - min p): mean, median, 95th pct,
-#     separately for groups whose clones share the orientation (g2 / g3 at
-#     t < w1) and groups with opposite orientations (g1 grace_end vs g2 / g3
-#     no_init at t = w1 - 1; g2 grace_end vs g3 at t = w2 - 1);
+#     separately for groups whose clones share the orientation and groups
+#     with opposite orientations. In the simulation (g1 censored only at
+#     t = w1 - 1, g2 the nested longer window censored only at t = w2 - 1,
+#     g3 censored on initiation in 0, ..., w2 - 1) every tied group has
+#     opposite orientations: g1 grace_end vs g3 no_init at t = w1 - 1 and
+#     g2 grace_end vs g3 no_init at t = w2 - 1, so the same-orientation
+#     statistics are NA (n_tied_same = 0). The same holds in the
+#     Webster-Clark cohort (0_30 grace_end vs no_0_90 no_init at day 20-29,
+#     0_90 grace_end vs no_0_90 no_init at day 80-89);
 #   * expected inconsistency rate (mean range over tied groups) and the
 #     empirical rate under the shared-U and the independent redraw;
 #   * the MaxIB null reference (95th percentile, exceedance of the observed
@@ -30,12 +36,18 @@
 #     each followed by the package's refit (.null_refit()) and interval RRB
 #     (.null_rrb()); same cell selection as rrb_null();
 #   * the null SD of the interval RRB of X in the g1 grace-end cell and the
-#     g3 cell at t = w1 - 1 under each scheme.
+#     g3 cell at t = w1 - 1 (sd_x_g1_*, sd_x_g3_*) and in the g2 grace-end
+#     cell and the g3 cell at t = w2 - 1 (sd_x_g2_*, sd_x_g3w2_*) under each
+#     scheme.
 #
 # Part 1: simulation, correctly specified censoring model, n = 2000 and 300,
-#         MaxIB over g1, g3 and eight history functions (as in the paper).
-# Part 2: Webster-Clark SynPUF cohort (as analysis/03b, section 1), MaxIB
-#         over all strategies and per strategy, five covariates. Skipped
+#         MaxIB over g1, g2, g3 and eight history functions (as in the
+#         paper).
+# Part 2: Webster-Clark SynPUF cohort (analysis/wc_data.R, base censoring
+#         model as analysis/03b), MaxIB over all strategies and per
+#         strategy, eleven features (five baseline covariates, the three
+#         time-varying claims indicators visit, outpt, fill, and the three
+#         depth functions fill_lag, fill_30, fill_cum; wc$feats). Skipped
 #         with a message if the data are absent.
 #
 # Outputs: output/sim/null_coupling_check.csv     one row per replicate
@@ -103,20 +115,21 @@ tie_stats <- function(s) {
   n0 <- as.vector(rowsum(as.numeric(s$on0), s$grp))
   tied <- sz >= 2
   opp <- tied & n0 > 0 & n0 < sz
-  same <- tied & !opp
+  same <- tied & !opp  # may be empty (simulation: no same-orientation ties)
   q <- function(v, pr) {
     if (length(v) == 0) NA_real_ else
       stats::quantile(v, pr, names = FALSE)
   }
+  mean_na <- function(v) if (length(v) == 0) NA_real_ else mean(v)
   list(stats = data.frame(
     n_censorable = length(s$grp), n_groups = s$n_grp,
     n_tied = sum(tied), n_tied_same = sum(same), n_tied_opp = sum(opp),
     frac_rows_tied = sum(sz[tied]) / length(s$grp),
-    range_mean = mean(rng[tied]), range_median = q(rng[tied], 0.5),
+    range_mean = mean_na(rng[tied]), range_median = q(rng[tied], 0.5),
     range_q95 = q(rng[tied], 0.95),
-    range_mean_same = if (any(same)) mean(rng[same]) else NA_real_,
-    range_mean_opp = if (any(opp)) mean(rng[opp]) else NA_real_,
-    incons_expected = mean(rng[tied])
+    range_mean_same = mean_na(rng[same]),
+    range_mean_opp = mean_na(rng[opp]),
+    incons_expected = mean_na(rng[tied])
   ), tied = tied, sz = sz)
 }
 
@@ -186,14 +199,18 @@ cell_sd <- function(s, sims, g, tt, f = "X") {
 one_rep <- function(n, rep) {
   pars <- ccw_sim_params(n = n)
   w1 <- pars$window[1]
+  w2 <- pars$window[2]
   d <- simulate_ccw(pars, seed = 7000 + rep)
   d <- make_history_features(d, interactions = list(c("L", "X")))
   w <- fit_censoring_model(d, SIM_FORMULA)
   s <- null_setup(w, FEATS)
   ts <- tie_stats(s)
+  # common initiation model fitted to g3's no_init rows: the untreated
+  # person-time at every censorable time 0, ..., w2 - 1 (g1 and g2 are
+  # censorable only at w1 - 1 and w2 - 1, inside this range)
   fit_rows <- s$data[s$data$strategy == "g3" & s$data$phase == "no_init", ]
   pc <- common_p(s, fit_rows, COMMON_SIM)
-  sel <- as.character(s$obs$strategy) %in% c("g1", "g3")
+  sel <- as.character(s$obs$strategy) %in% c("g1", "g2", "g3")
   out <- cbind(data.frame(n = n, rep = rep), ts$stats)
   for (sc in SCHEMES) {
     r <- run_scheme(sc, s, ts, N_DRAWS, 100 + rep, pc)
@@ -206,6 +223,8 @@ one_rep <- function(n, rep) {
     out[[paste0("incons_emp_", sc)]] <- r$incons
     out[[paste0("sd_x_g1_", sc)]] <- cell_sd(s, r$sims, "g1", w1 - 1)
     out[[paste0("sd_x_g3_", sc)]] <- cell_sd(s, r$sims, "g3", w1 - 1)
+    out[[paste0("sd_x_g2_", sc)]] <- cell_sd(s, r$sims, "g2", w2 - 1)
+    out[[paste0("sd_x_g3w2_", sc)]] <- cell_sd(s, r$sims, "g3", w2 - 1)
   }
   out
 }
@@ -257,47 +276,22 @@ if (RUN_SIM) {
 }
 
 # ---------------------------------------------------------------------------
-# 2. Webster-Clark cohort (data preparation as analysis/03b, section 1)
+# 2. Webster-Clark cohort (analysis/wc_data.R, as analysis/03b)
 data_file <- file.path("data-raw", "webster_clark", "Data",
                        "baseccwcohort.sas7bdat")
-if (!file.exists(data_file)) {
-  message("Webster-Clark data not found (", data_file, "); part 2 skipped.")
+claims_dir <- file.path("data-raw", "synpuf_claims")
+if (!file.exists(data_file) || !dir.exists(claims_dir)) {
+  message("Webster-Clark data or SynPUF claims not found (", data_file, ", ",
+          claims_dir, "); part 2 skipped.")
 } else {
   dir.create(emp_dir, recursive = TRUE, showWarnings = FALSE)
-  DELTA <- 10
-  HORIZON <- 180
-  K <- HORIZON / DELTA
-  raw <- haven::read_sas(data_file)
-  cohort <- data.frame(
-    id = seq_len(nrow(raw)), ID = raw$ID,
-    age = raw$baseline_age,
-    female = as.numeric(raw$sex == "2"),
-    renal = as.numeric(raw$renal == "Y"),
-    race_black = as.numeric(raw$race == "2"),
-    race_other = as.numeric(raw$race %in% c("3", "5")),
-    rx = raw$RX_start, fu = raw$followup, outcome = raw$outcome
-  )
-  day_to_int <- function(d) floor(d / DELTA)
-  cohort$init_time <- ifelse(is.na(cohort$rx) | cohort$rx >= HORIZON, Inf,
-                             day_to_int(cohort$rx))
-  cohort$event_time <- ifelse(cohort$outcome == 1 & cohort$fu <= HORIZON,
-                              pmin(day_to_int(cohort$fu), K - 1), Inf)
-  cohort$ltfu_time <- ifelse(cohort$outcome == 0 & cohort$fu < HORIZON,
-                             day_to_int(cohort$fu), Inf)
+  source(file.path("analysis", "wc_data.R"))
+  wcd <- wc_prepare(delta = 10, horizon = 180)
+  w30 <- wcd$w30
+  feats <- wcd$feats
+  w <- fit_censoring_model(wcd$long, wcd$formulas$base, stabilized = TRUE)
 
-  covs <- c("age", "female", "renal", "race_black", "race_other")
-  w30 <- day_to_int(30)
-  w90 <- day_to_int(90)
-  strategies <- list("0_30" = c(0, w30 - 1), "0_90" = c(0, w90 - 1),
-                     "30_90" = c(w30, w90 - 1), "no_0_90" = c(NA, w90 - 1))
-  long <- ccw_clone(cohort, strategies, n_time = K, covariates = covs)
-  formulas <- list(
-    no_init = ~ age + female + renal + time + I(time^2),
-    grace_end = ~ age + female + renal
-  )
-  w <- fit_censoring_model(long, formulas, stabilized = TRUE)
-
-  s <- null_setup(w, covs)
+  s <- null_setup(w, feats)
   ts <- tie_stats(s)
   fit_rows <- s$data[s$data$strategy == "no_0_90" &
                        s$data$phase == "no_init", ]

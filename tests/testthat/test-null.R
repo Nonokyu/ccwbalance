@@ -111,17 +111,17 @@ test_that("coupled redraw ties grace-end and no-initiation clones", {
   expect_identical(.null_draw(0.4, TRUE, 1L, 0.3), 0L)
 })
 
-test_that("coupling = 'independent' matches regression values", {
+test_that("coupling = 'independent' reproduces the earlier draws", {
   d <- simulate_ccw(ccw_sim_params(n = 300), seed = 1)
   w <- fit_censoring_model(d, ~ L + I(L^2) + X + L:X)
   nr <- rrb_null(w, c("X", "L"), n_draws = 20, seed = 1,
                  coupling = "independent")
   expect_equal(nr$maxib$null_q95,
-               c(0.146329, 0.340672, 0.210446, 0.128028, 0.177860, 0.150284,
-                 0.146329, 0.340672, 0.210446, 0.340672, 0.177860, 0.340672),
+               c(0.216874, 0.269155, 0.178523, 0.088963, 0.131392, 0.177494,
+                 0.216874, 0.269155, 0.191723, 0.269155, 0.190505, 0.269155),
                tolerance = 1e-5)
   expect_equal(head(nr$cells$null_sd, 5),
-               c(0.0899601, 0.0657233, 0.0188302, 0.0246920, 0.0277770),
+               c(0.0898459, 0.0640627, 0.1060405, 0.0622723, 0.0194842),
                tolerance = 1e-5)
 })
 
@@ -224,7 +224,10 @@ cb_fixture <- function() {
   fit_censoring_model(d, ~ L + I(L^2) + X + L:X)
 }
 
-test_that("RRB output of rrb_null() matches stored reference values", {
+test_that("adding censoring balance leaves the RRB output unchanged", {
+  # reference computed with rrb_null() before censoring balance was added
+  # (regenerated on the nested-g2 DGM after checking that the code still
+  # reproduced the original reference on the pre-redesign simulator data)
   ref <- readRDS(test_path("ref-rrb-null.rds"))
   w <- cb_fixture()
   f <- c("X", "L", "L_lag")

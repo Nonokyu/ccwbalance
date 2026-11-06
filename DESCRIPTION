@@ -4,12 +4,14 @@ Title: Artificial-Censoring Diagnostics for Clone-Censor-Weight Analyses
 Version: 0.1.0
 Authors@R:
     person("Yuta", "Nonomiya", role = c("aut", "cre"),
-           email = "ynonomiya.ocum@gmail.com")
+           email = "nonomiya.yuta@omu.ac.jp")
 Description: Diagnostics for the artificial-censoring weights of
     clone-censor-weight analyses in target trial emulation. Provides
     interval and cumulative risk-set reconstruction balance, with
     Kolmogorov-Smirnov and Mahalanobis versions; censoring balance; a
-    conditional parametric null reference for the maximum absolute
+    conditional parametric null reference that judges each strategy by
+    the studentised maximum (the largest absolute imbalance in units of
+    its null standard deviation) as well as the raw maximum absolute
     imbalance; an individual-level bootstrap; end-of-grace and
     between-strategy standardised mean differences; weight-support
     summaries; plots; construction of the long data from observational
@@ -31,6 +33,7 @@ Imports:
 Suggests:
     gridExtra,
     patchwork,
+    pkgload,
     testthat (>= 3.0.0)
 Config/testthat/edition: 3
 Config/roxygen2/version: 8.1.0

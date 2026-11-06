@@ -1,56 +1,60 @@
-#' Build long data under each strategy with artificial censoring
+#' Clone and artificially censor observational data
 #'
-#' Evaluates the observed treatment history of every individual against
-#' every strategy and returns long data in the package format (see
-#' [ccwbalance-package]), with artificial censoring in the interval of the
-#' first deviation. Two input modes are available:
+#' Converts observational data into long clone data following the package
+#' long-data contract. Two input modes are supported:
 #'
-#' * Initiation-window strategies (default): one row per individual with
-#'   the intervals of initiation, outcome and loss to follow-up.
-#' * Sustained strategies: person-period data (supply `time` and
-#'   `treatment`) and strategies created by [ccw_sustained()], such as
-#'   "treat in every interval" or "never treat".
+#' * **Initiation-window strategies** (one row per individual; default): with
+#'   discrete initiation, outcome and loss-to-follow-up intervals, for
+#'   strategies "initiate treatment within intervals `a, ..., b`" or "do not
+#'   initiate through interval `b`" (numeric windows, see below).
+#' * **Sustained strategies** (person-period input; supply `time` and
+#'   `treatment`): strategies created by [ccw_sustained()], e.g. "treat in
+#'   every interval" or "never treat", where treatment can start and stop and
+#'   a deviation can occur in every interval. See [ccw_sustained()] for the
+#'   rules.
 #'
-#' Window rules, with `tau` the initiation interval (`Inf` if none):
-#' * window `c(a, b)` ("initiate in intervals `a, ..., b`"): initiation
-#'   before `a` is a deviation in interval `tau` (phase `"no_init"` for
-#'   `k < a`); no initiation by the end of `b` is a deviation in interval
-#'   `b` (phase `"grace_end"` at `k = b` among those not yet initiated);
-#' * window `c(NA, b)` ("do not initiate through interval `b`"):
-#'   initiation at `tau <= b` is a deviation in interval `tau` (phase
-#'   `"no_init"` for `k <= b`).
+#' Rules (with `tau` the initiation interval, `Inf` if none):
+#' * window `c(a, b)`: initiating before `a` is a deviation at `tau` (phase
+#'   `"no_init"` for `t < a`); not having initiated by the end of `b` is a
+#'   deviation at `b` (phase `"grace_end"` at `t = b` among the uninitiated);
+#' * window `c(NA, b)` ("never"): initiating at `tau <= b` is a deviation at
+#'   `tau` (phase `"no_init"` for `t <= b`).
+#' Within an interval the ordering is artificial censoring, then loss to
+#' follow-up, then the outcome, as in [simulate_ccw()], with one exception
+#' controlled by `outcome_first_at_grace_end`: a "did not initiate by the end
+#' of the window" deviation is only realised at the **end** of interval `b`,
+#' so by default a clone whose outcome or loss to follow-up falls in interval
+#' `b` is not artificially censored (it is compatible with the strategy up to
+#' its outcome; this is the usual CCW convention for deaths during the grace
+#' period and matches continuous-time implementations). Such rows get phase
+#' `"none"` so they do not enter the grace-end censoring model. Rows stop at
+#' the first of artificial censoring, outcome, loss to follow-up or
+#' `n_time - 1`.
 #'
-#' Within an interval the order is artificial censoring, loss to follow-up,
-#' outcome. The exception is controlled by `outcome_first_at_grace_end`:
-#' non-initiation by the end of interval `b` is a deviation only at the end
-#' of that interval, so by default an individual whose outcome or loss to
-#' follow-up falls in interval `b` is not artificially censored there; such
-#' rows get phase `"none"` and do not enter the grace-end censoring model.
-#' Rows stop at the first of artificial censoring, outcome, loss to
-#' follow-up or interval `n_time - 1`.
-#'
-#' @param data One row per individual (window mode) or one row per
-#'   individual x interval (sustained mode).
+#' @param data One row per individual (window mode) or one row per individual
+#'   x interval (sustained mode).
 #' @param strategies Named list of windows, e.g.
-#'   `list(g1 = c(0, 2), g2 = c(3, 8), g3 = c(NA, 8))`, or (sustained mode)
-#'   of [ccw_sustained()] objects.
-#' @param n_time Number of intervals of follow-up (window mode; optional in
-#'   sustained mode, where rows with `time >= n_time` are dropped).
+#'   `list(g1 = c(0, 2), g2 = c(0, 8), g3 = c(NA, 8))`, or (sustained mode) of
+#'   [ccw_sustained()] objects.
+#' @param n_time Number of discrete intervals of follow-up (window mode; in
+#'   sustained mode optional, rows with `time >= n_time` are dropped).
 #' @param id,init_time,event_time,ltfu_time Column names; times are interval
-#'   indices (`0, 1, ...`), `Inf` or `NA` if the event does not occur.
+#'   indices (`0, 1, ...`), `Inf`/`NA` if the event does not occur.
 #' @param covariates Columns copied to every row.
-#' @param outcome_first_at_grace_end See Details. With `FALSE` artificial
-#'   censoring at the end of the window comes first, as in [simulate_ccw()].
+#' @param outcome_first_at_grace_end See Details. Set to `FALSE` to censor
+#'   first (as [simulate_ccw()], where treatment in the last window interval
+#'   affects the outcome in the same interval).
 #' @param time,treatment Sustained mode: interval index and binary treatment
-#'   columns of the person-period data. Supplying `time` selects sustained
-#'   mode.
-#' @param event,ltfu Sustained mode: outcome indicator of the interval (`NA`
-#'   allowed when unobserved) and optional loss-to-follow-up indicator
-#'   (lost before the outcome of the interval). Individuals whose records
-#'   end without an outcome leave the risk set.
-#' @return Long data with `id, strategy, time, at_risk, A, A_lag,
-#'   censor_possible, phase, censored_next, ltfu_next, event_next` and the
-#'   `covariates` (sustained mode adds `run_off`, see [ccw_sustained()]).
+#'   columns of the person-period data. Supplying `time` switches to
+#'   sustained mode.
+#' @param event,ltfu Sustained mode: outcome indicator in the interval
+#'   (`NA` allowed when unobserved) and optional loss-to-follow-up indicator
+#'   (lost before the outcome of the interval). Individuals whose records end
+#'   early without an outcome simply leave the risk set (non-informative
+#'   administrative/natural censoring unless weighted separately).
+#' @return Long clone data with `id, strategy, time, at_risk, A, A_lag,
+#'   censor_possible, phase, censored_next, ltfu_next, event_next` and
+#'   `covariates`.
 #' @export
 #' @examples
 #' obs <- data.frame(id = 1:3, tau = c(1, 5, Inf), ev = c(Inf, 4, 2),
@@ -60,7 +64,7 @@
 #'           covariates = "age")
 #' pp <- data.frame(id = rep(1:2, each = 3), t = rep(0:2, 2),
 #'                  a = c(1, 1, 0, 0, 0, 0), y = c(0, 0, 0, 0, 1, NA),
-#'                  L = c(0.2, -0.1, 0.4, 1.1, 0.3, -0.5))
+#'                  L = rnorm(6))
 #' ccw_clone(pp, list(always = ccw_sustained(1), never = ccw_sustained(0)),
 #'           time = "t", treatment = "a", event = "y", covariates = "L")
 ccw_clone <- function(data, strategies, n_time = NULL, id = "id",
@@ -138,21 +142,22 @@ ccw_clone <- function(data, strategies, n_time = NULL, id = "id",
   out
 }
 
-#' Sustained treatment strategy for ccw_clone()
+#' Sustained treatment strategy for [ccw_clone()]
 #'
-#' Defines the strategy "receive treatment level `value` in every interval",
-#' optionally allowing up to `grace` consecutive non-adherent intervals. An
-#' individual deviates (`censored_next = 1`) in the first interval `k` in
-#' which its run of consecutive non-adherent intervals reaches `grace + 1`.
-#' Artificial censoring is therefore possible (phase `"sustain"`) in rows
-#' whose run of non-adherence up to interval `k - 1` (column `run_off`)
-#' equals `grace`; rows with a shorter run get phase `"none"` and
-#' `censor_possible = FALSE`. With `grace = 0` every non-adherent interval
-#' is a deviation. The censoring model of phase `"sustain"` is a model for
-#' `P(A_k = value | H_k)`.
+#' Defines a strategy "receive treatment level `value` in every interval",
+#' optionally allowing up to `grace` consecutive non-adherent intervals.
+#' A clone deviates (is artificially censored, `censored_next = 1`) at the
+#' first interval `t` in which its run of consecutive non-adherent intervals
+#' reaches `grace + 1`. Artificial censoring is therefore possible in every
+#' interval (phase `"sustain"`) for rows whose run of non-adherence up to
+#' `t - 1` (column `run_off`) equals `grace`; rows with a shorter run can be
+#' non-adherent without deviating (phase `"none"`,
+#' `censor_possible = FALSE`). With `grace = 0` every
+#' non-adherent interval is a deviation. The censoring model at phase
+#' `"sustain"` is `P(A_t = value | H_t)`.
 #'
-#' Within an interval the order is `L_k`, `A_k`, artificial censoring, loss
-#' to follow-up, outcome; a censored row has `event_next = NA`.
+#' Within an interval the ordering is `L_t -> A_t -> D_{t+1}` (deviation)
+#' `-> C^{LTFU}_{t+1} -> Y_{t+1}`; a censored row has `event_next = NA`.
 #'
 #' @param value Treatment level to sustain (1 = always treat, 0 = never
 #'   treat).
@@ -201,7 +206,7 @@ print.ccw_sustained <- function(x, ...) {
   first <- !duplicated(idv)
   a_lag <- c(0, a[-length(a)])
   a_lag[first] <- 0
-  # first outcome / loss-to-follow-up interval (later rows are dropped)
+  # time of first outcome / LTFU per individual (rows after are dropped)
   first_time <- function(flag) {
     ft <- tapply(ifelse(!is.na(flag) & flag == 1, tv, Inf), idv, min)
     unname(ft[as.character(idv)])
@@ -211,7 +216,7 @@ print.ccw_sustained <- function(x, ...) {
   out <- lapply(names(strategies), function(g) {
     st <- strategies[[g]]
     nonadh <- as.integer(a != st$value)
-    # run of consecutive non-adherent intervals up to and including k
+    # run of consecutive non-adherent intervals up to and including t
     run <- stats::ave(nonadh, idv, FUN = function(z) {
       r <- integer(length(z))
       acc <- 0L

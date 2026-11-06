@@ -2,7 +2,7 @@
 % Please edit documentation in R/simulate.R
 \name{simulate_ccw}
 \alias{simulate_ccw}
-\title{Simulate long data from the data-generating mechanism}
+\title{Simulate cloned CCW data under the report's DGM}
 \usage{
 simulate_ccw(params = ccw_sim_params(), seed = NULL)
 }
@@ -12,22 +12,24 @@ simulate_ccw(params = ccw_sim_params(), seed = NULL)
 \item{seed}{Optional random seed.}
 }
 \value{
-A data frame with columns \verb{id, strategy, time, at_risk, X, L, L_lag, A, A_lag, censor_possible, phase, censored_next, ltfu_next, event_next} (with \code{n_extra > 0}, the columns \verb{X2, ..., X\{n_extra + 1\}}
+A data frame with columns \verb{id, strategy, time, at_risk, X, L, L_lag, A, A_lag, censor_possible, phase, censored_next, ltfu_next, event_next}
+(with \code{n_extra > 0}, the baseline columns \verb{X2, ..., X\{n_extra + 1\}}
 follow \code{X}).
-\code{phase} is \code{"no_init"} (censored if initiating), \code{"grace_end"}
-(censored if not initiating) or \code{"none"}. The parameters are attached
-as attribute \code{"params"}.
+\code{phase} labels the kind of artificial censoring possible in the row
+(\code{"no_init"}: censored if initiating; \code{"grace_end"}: censored if not
+initiating; \code{"none"}).
 }
 \description{
-Simulates observational data from the mechanism of \code{\link[=ccw_sim_params]{ccw_sim_params()}},
-evaluates every individual under the three strategies and applies
-artificial censoring in the interval of the first deviation. Returns long
-data in the package format (see \link{ccwbalance-package}).
+Simulates observational data from the DGM documented in
+\code{\link[=ccw_sim_params]{ccw_sim_params()}}, clones every individual into the three strategies and
+applies artificial censoring at the first deviation. Returns long clone data
+(one row per clone x strategy x interval in the risk set) following the
+package long-data contract.
 }
 \details{
-Within interval \code{k} the order is \code{L_k}, \code{A_k}, artificial censoring
-(\code{D_k}), loss to follow-up, outcome. A row with \code{censored_next = 1} has
-\code{event_next = NA}.
+Within interval \code{t} the ordering is \verb{L_t -> A_t -> D_\{t+1\}} (artificial
+censoring) \verb{-> C^\{LTFU\}_\{t+1\} -> Y_\{t+1\}}. A row with \code{censored_next = 1} has
+no observed outcome for that interval (\code{event_next = NA}).
 }
 \examples{
 d <- simulate_ccw(ccw_sim_params(n = 200), seed = 1)

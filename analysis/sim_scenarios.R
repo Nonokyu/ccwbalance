@@ -24,16 +24,16 @@
 #   variants  variants of main's scenarios (omitted L_t alone, L_t^2 cells
 #             at gamma0 = -4.5, early events with 500 bootstrap resamples)
 #
-# Each scenario of the manuscript (Table 2 of the manuscript, in row order)
-# has an id: P1-01 to P1-13
+# Each scenario of the manuscript (Table "tab:grid" of the manuscript, in
+# row order) has an id: P1-01 to P1-13
 # (Part 1), P2-01 to P2-06 (Part 2), P3-01 to P3-04 (Part 3). Each id points
 # to the run scenario whose results the manuscript reports; the column
 # `supersedes` of paper_scenarios() records the rows of earlier runs that
 # it replaces. Scenarios reported only in the
 # Supporting Information or used only by the supplementary checks would
 # carry ids E-01, E-02, ...; there are none: the supplementary checks
-# (02d, 02e, 02f, 02g, 02h, 02i, 02j) and every table of the Supporting
-# Information concern the mechanisms of P ids.
+# (02d, 02e, 02f, 02g, 02j, 02l, 02m) and every table of the
+# Supporting Information concern the mechanisms of P ids.
 # paper_scenarios() returns the mapping table (written to
 # analysis/scenarios_paper.csv) and paper_scenario(id) the run scenario.
 
@@ -108,7 +108,7 @@
 #   model; `gamma0 = -2`, `gamma2 = -3.5`, `gamma3 = 2.5`; replaced by the
 #   run `variants`): many outcome
 #   events during g1's grace period and a strongly prognostic `X`, so that
-#   the end-of-grace strategy SMD of `X` (g1 vs g3) is clearly non-zero under
+#   the end-of-grace strategy SMD of `X` (g2 vs g1) is clearly non-zero under
 #   correct weights through outcome depletion, while the cumulative RRB of
 #   the baseline features stays near 0 (pilot: 20 replicates per setting,
 #   n = 2000: mean |end-of-grace SMD of X| about 0.25, mean cumulative-RRB
@@ -443,7 +443,7 @@ scenario_table <- function(scenarios = ccw_scenarios()) {
   }))
 }
 
-# Scenarios of the manuscript, in the row order of Table 2 of the
+# Scenarios of the manuscript, in the row order of Table tab:grid of the
 # manuscript: id, part, label (manuscript wording, ASCII),
 # the run and run scenario that supply the reported results, the factor
 # levels of Part 1 (NA elsewhere: taken from the run scenario) and the
@@ -513,7 +513,7 @@ scenario_table <- function(scenarios = ccw_scenarios()) {
 # Scenarios of the manuscript and the runs that supply them
 #
 # Value: A data frame with one row per scenario of the manuscript, in the
-#   row order of Table 2 (P1-01 to P1-13, P2-01 to P2-06, P3-01 to
+#   row order of Table tab:grid (P1-01 to P1-13, P2-01 to P2-06, P3-01 to
 #   P3-04; E ids would follow, see the header): `id`, `part`, `label`,
 #   `run` and `scenario` (the run scenario whose results the manuscript
 #   reports), `supersedes` ("<run>:<scenario>" keys of the rows of earlier

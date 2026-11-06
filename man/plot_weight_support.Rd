@@ -2,7 +2,7 @@
 % Please edit documentation in R/plots.R
 \name{plot_weight_support}
 \alias{plot_weight_support}
-\title{Weight-support plot}
+\title{Weight-support panel}
 \usage{
 plot_weight_support(x)
 }
@@ -13,8 +13,8 @@ plot_weight_support(x)
 A ggplot object.
 }
 \description{
-Plots \code{ESS / n_risk}, the 95th and 99th weight percentiles and
-\code{min(pi_hat)} against the interval, by strategy.
+Plots ESS/N, the 95th and 99th weight percentiles and \code{min(pi_hat)} against
+time by strategy.
 }
 \examples{
 d <- simulate_ccw(ccw_sim_params(n = 300), seed = 1)

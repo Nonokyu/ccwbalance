@@ -2,7 +2,7 @@
 % Please edit documentation in R/balance.R
 \name{strategy_balance}
 \alias{strategy_balance}
-\title{Between-strategy balance (standardised mean differences)}
+\title{Strategy-balance (descriptive dynamic strategy-risk-set contrast)}
 \usage{
 strategy_balance(
   data,
@@ -16,7 +16,7 @@ strategy_balance(
 )
 }
 \arguments{
-\item{data}{Long data (with weights if \code{weighted = TRUE}).}
+\item{data}{Long clone data.}
 
 \item{features}{Feature columns.}
 
@@ -30,20 +30,16 @@ strategy_balance(
 A data frame with \verb{strategy, reference, time, feature, weighted, mean, mean_ref, smd}.
 }
 \description{
-\deqn{SMD_{j}(g, k) = (\mu_{j,g}(k) - \mu_{j,g_0}(k)) /
-  \sqrt{(s^2_{j,g}(k) + s^2_{j,g_0}(k)) / 2}}
-compares each strategy \code{g} with a reference strategy \code{g_0} in every
-interval. With \code{weighted = TRUE} the means and variances are over the
-rows retained in interval \code{k} (\code{D_k = 0}), weighted by \code{w_post}; with
-\code{weighted = FALSE} they are unweighted over the at-risk rows. The
-end-of-grace SMD is the weighted value in the first interval after the
-grace period. For post-baseline covariates affected by earlier treatment
-this contrast is descriptive and has no zero target.
+\deqn{B^S_j(t) = \frac{\mu^w_{j,g}(t) - \mu^w_{j,g'}(t)}{s_{j,ref}}}
+comparing each strategy with a reference strategy at each time, where
+\code{s_ref} is the square root of the average of the two (weighted) variances.
+With \code{weighted = TRUE} the means are over clones retained after artificial
+censoring at \code{t}, weighted by \code{w_post}; with \code{weighted = FALSE} they are
+unweighted means over the at-risk rows. For post-baseline covariates
+affected by earlier treatment this is \strong{descriptive only} and is not a
+zero-balance target (see the report).
 }
 \examples{
 d <- simulate_ccw(ccw_sim_params(n = 300), seed = 1)
 head(strategy_balance(d, c("X", "L"), weighted = FALSE))
-w <- fit_censoring_model(d, ~ L + I(L^2) + X + L:X)
-sb <- strategy_balance(w, "X", reference = "g1")
-sb[sb$time == 3, ]
 }

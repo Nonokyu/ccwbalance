@@ -1,32 +1,36 @@
 #' Individual-level bootstrap of RRB
 #'
 #' Nonparametric bootstrap of the RRB trajectory (cumulative scope by
-#' default). Individuals are resampled with replacement, with all their rows
-#' under every strategy; each resampled individual gets a new identifier,
-#' so an individual drawn twice contributes two independent histories. The
-#' censoring model is refitted on each resample with the settings stored by
-#' [fit_censoring_model()] (formula, numerator, model groups, stabilisation,
-#' truncation) and [rrb()] is recomputed.
+#' default, interval scope optionally) that propagates the full sampling
+#' variability: individuals are resampled with replacement (all clones of an
+#' individual move together), the censoring model is refitted on each
+#' resample with the settings stored by [fit_censoring_model()] (formula,
+#' numerator, model groups, stabilisation, truncation) and [rrb()] is
+#' recomputed. Each resampled individual gets a new unique identifier, so
+#' an individual drawn twice contributes two independent clone histories
+#' (cumulative weights are formed within identifier x strategy).
 #'
-#' This is an uncertainty summary of the observed RRB, mainly for the
-#' cumulative scope, where the RRB of time-varying features is descriptive.
-#' For a zero-targeted reference of the interval scope see [rrb_null()].
+#' Unlike [rrb_null()], which is a conditional null reference for the
+#' interval scope, this is a sampling-distribution (uncertainty) summary of
+#' the observed RRB; it is mainly intended for the cumulative scope, where
+#' the RRB of time-varying features is descriptive rather than 0-targeted.
 #'
-#' @param data Long data returned by [fit_censoring_model()] (its
+#' @param data Long clone data returned by [fit_censoring_model()] (its
 #'   `"weighting"` attribute supplies the model settings).
-#' @param features Character vector of feature columns `f(H_k)`.
+#' @param features Character vector of feature columns `f(H_t)`.
 #' @param B Number of bootstrap resamples.
 #' @param scope `"cumulative"` (default) or `"interval"` (see [rrb()]).
-#' @param method One RRB weighting method (see [rrb()]).
+#' @param method RRB weighting method (see [rrb()]); one method.
 #' @param seed Optional random seed.
 #' @param id,strategy,time Column names.
 #' @param ... Further arguments passed to [rrb()] (e.g. `censored`,
 #'   `event`, `carry_events`).
-#' @return A data frame with one row per observed strategy x interval x
-#'   feature cell: `strategy, time, feature, n_risk, rrb_obs, boot_mean,
-#'   boot_se, lcl, ucl` (percentile 2.5% and 97.5% limits), `n_boot_ok`
-#'   (resamples in which the cell's RRB is defined), `B` and `scope`. A cell
-#'   absent from a resample is ignored in that resample.
+#' @return A data frame with one row per observed strategy x time x feature
+#'   cell: `strategy, time, feature, n_risk` (observed), `rrb_obs`,
+#'   `boot_mean, boot_se, lcl, ucl` (percentile 2.5% and 97.5% limits),
+#'   `n_boot_ok` (resamples in which the cell's RRB was defined), `B` and
+#'   `scope`. Cells absent from a resample are `NA` in that resample and
+#'   ignored in the summaries.
 #' @export
 #' @examples
 #' d <- simulate_ccw(ccw_sim_params(n = 300), seed = 1)
@@ -83,15 +87,15 @@ rrb_boot <- function(data, features, B = 200,
   )
 }
 
-# Columns added by fit_censoring_model(), dropped before refitting
+# Internal: columns added by fit_censoring_model() (dropped before refitting)
 .boot_weight_cols <- function() {
   c("pi_hat", "q_hat", "weight_unstab", "weight_stab", "w_prev_unstab",
     "w_prev_stab", "weight", "w_prev", "w_post", "w_ref",
     "weights_stabilized", ".uncens")
 }
 
-# RRB of one resample; `rows` holds one row-index vector per resampled
-# individual, which gets its position as the new identifier
+# Internal: RRB of one resample. `rows` is a list of row-index vectors, one
+# per resampled individual; each gets the new identifier of its position.
 .boot_rrb <- function(base, rows, wt, features, method, scope, id, strategy,
                       time, ...) {
   db <- base[unlist(rows, use.names = FALSE), , drop = FALSE]

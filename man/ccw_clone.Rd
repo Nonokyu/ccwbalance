@@ -2,7 +2,7 @@
 % Please edit documentation in R/clone.R
 \name{ccw_clone}
 \alias{ccw_clone}
-\title{Build long data under each strategy with artificial censoring}
+\title{Clone and artificially censor observational data}
 \usage{
 ccw_clone(
   data,
@@ -21,71 +21,75 @@ ccw_clone(
 )
 }
 \arguments{
-\item{data}{One row per individual (window mode) or one row per
-individual x interval (sustained mode).}
+\item{data}{One row per individual (window mode) or one row per individual
+x interval (sustained mode).}
 
 \item{strategies}{Named list of windows, e.g.
-\code{list(g1 = c(0, 2), g2 = c(3, 8), g3 = c(NA, 8))}, or (sustained mode)
-of \code{\link[=ccw_sustained]{ccw_sustained()}} objects.}
+\code{list(g1 = c(0, 2), g2 = c(0, 8), g3 = c(NA, 8))}, or (sustained mode) of
+\code{\link[=ccw_sustained]{ccw_sustained()}} objects.}
 
-\item{n_time}{Number of intervals of follow-up (window mode; optional in
-sustained mode, where rows with \code{time >= n_time} are dropped).}
+\item{n_time}{Number of discrete intervals of follow-up (window mode; in
+sustained mode optional, rows with \code{time >= n_time} are dropped).}
 
 \item{id, init_time, event_time, ltfu_time}{Column names; times are interval
-indices (\verb{0, 1, ...}), \code{Inf} or \code{NA} if the event does not occur.}
+indices (\verb{0, 1, ...}), \code{Inf}/\code{NA} if the event does not occur.}
 
 \item{covariates}{Columns copied to every row.}
 
-\item{outcome_first_at_grace_end}{See Details. With \code{FALSE} artificial
-censoring at the end of the window comes first, as in \code{\link[=simulate_ccw]{simulate_ccw()}}.}
+\item{outcome_first_at_grace_end}{See Details. Set to \code{FALSE} to censor
+first (as \code{\link[=simulate_ccw]{simulate_ccw()}}, where treatment in the last window interval
+affects the outcome in the same interval).}
 
 \item{time, treatment}{Sustained mode: interval index and binary treatment
-columns of the person-period data. Supplying \code{time} selects sustained
-mode.}
+columns of the person-period data. Supplying \code{time} switches to
+sustained mode.}
 
-\item{event, ltfu}{Sustained mode: outcome indicator of the interval (\code{NA}
-allowed when unobserved) and optional loss-to-follow-up indicator
-(lost before the outcome of the interval). Individuals whose records
-end without an outcome leave the risk set.}
+\item{event, ltfu}{Sustained mode: outcome indicator in the interval
+(\code{NA} allowed when unobserved) and optional loss-to-follow-up indicator
+(lost before the outcome of the interval). Individuals whose records end
+early without an outcome simply leave the risk set (non-informative
+administrative/natural censoring unless weighted separately).}
 }
 \value{
-Long data with \verb{id, strategy, time, at_risk, A, A_lag, censor_possible, phase, censored_next, ltfu_next, event_next} and the
-\code{covariates} (sustained mode adds \code{run_off}, see \code{\link[=ccw_sustained]{ccw_sustained()}}).
+Long clone data with \verb{id, strategy, time, at_risk, A, A_lag, censor_possible, phase, censored_next, ltfu_next, event_next} and
+\code{covariates}.
 }
 \description{
-Evaluates the observed treatment history of every individual against
-every strategy and returns long data in the package format (see
-\link{ccwbalance-package}), with artificial censoring in the interval of the
-first deviation. Two input modes are available:
+Converts observational data into long clone data following the package
+long-data contract. Two input modes are supported:
 }
 \details{
 \itemize{
-\item Initiation-window strategies (default): one row per individual with
-the intervals of initiation, outcome and loss to follow-up.
-\item Sustained strategies: person-period data (supply \code{time} and
-\code{treatment}) and strategies created by \code{\link[=ccw_sustained]{ccw_sustained()}}, such as
-"treat in every interval" or "never treat".
+\item \strong{Initiation-window strategies} (one row per individual; default): with
+discrete initiation, outcome and loss-to-follow-up intervals, for
+strategies "initiate treatment within intervals \verb{a, ..., b}" or "do not
+initiate through interval \code{b}" (numeric windows, see below).
+\item \strong{Sustained strategies} (person-period input; supply \code{time} and
+\code{treatment}): strategies created by \code{\link[=ccw_sustained]{ccw_sustained()}}, e.g. "treat in
+every interval" or "never treat", where treatment can start and stop and
+a deviation can occur in every interval. See \code{\link[=ccw_sustained]{ccw_sustained()}} for the
+rules.
 }
 
-Window rules, with \code{tau} the initiation interval (\code{Inf} if none):
+Rules (with \code{tau} the initiation interval, \code{Inf} if none):
 \itemize{
-\item window \code{c(a, b)} ("initiate in intervals \verb{a, ..., b}"): initiation
-before \code{a} is a deviation in interval \code{tau} (phase \code{"no_init"} for
-\code{k < a}); no initiation by the end of \code{b} is a deviation in interval
-\code{b} (phase \code{"grace_end"} at \code{k = b} among those not yet initiated);
-\item window \code{c(NA, b)} ("do not initiate through interval \code{b}"):
-initiation at \code{tau <= b} is a deviation in interval \code{tau} (phase
-\code{"no_init"} for \code{k <= b}).
+\item window \code{c(a, b)}: initiating before \code{a} is a deviation at \code{tau} (phase
+\code{"no_init"} for \code{t < a}); not having initiated by the end of \code{b} is a
+deviation at \code{b} (phase \code{"grace_end"} at \code{t = b} among the uninitiated);
+\item window \code{c(NA, b)} ("never"): initiating at \code{tau <= b} is a deviation at
+\code{tau} (phase \code{"no_init"} for \code{t <= b}).
+Within an interval the ordering is artificial censoring, then loss to
+follow-up, then the outcome, as in \code{\link[=simulate_ccw]{simulate_ccw()}}, with one exception
+controlled by \code{outcome_first_at_grace_end}: a "did not initiate by the end
+of the window" deviation is only realised at the \strong{end} of interval \code{b},
+so by default a clone whose outcome or loss to follow-up falls in interval
+\code{b} is not artificially censored (it is compatible with the strategy up to
+its outcome; this is the usual CCW convention for deaths during the grace
+period and matches continuous-time implementations). Such rows get phase
+\code{"none"} so they do not enter the grace-end censoring model. Rows stop at
+the first of artificial censoring, outcome, loss to follow-up or
+\code{n_time - 1}.
 }
-
-Within an interval the order is artificial censoring, loss to follow-up,
-outcome. The exception is controlled by \code{outcome_first_at_grace_end}:
-non-initiation by the end of interval \code{b} is a deviation only at the end
-of that interval, so by default an individual whose outcome or loss to
-follow-up falls in interval \code{b} is not artificially censored there; such
-rows get phase \code{"none"} and do not enter the grace-end censoring model.
-Rows stop at the first of artificial censoring, outcome, loss to
-follow-up or interval \code{n_time - 1}.
 }
 \examples{
 obs <- data.frame(id = 1:3, tau = c(1, 5, Inf), ev = c(Inf, 4, 2),
@@ -95,7 +99,7 @@ ccw_clone(obs, list(early = c(0, 2), never = c(NA, 6)), n_time = 7,
           covariates = "age")
 pp <- data.frame(id = rep(1:2, each = 3), t = rep(0:2, 2),
                  a = c(1, 1, 0, 0, 0, 0), y = c(0, 0, 0, 0, 1, NA),
-                 L = c(0.2, -0.1, 0.4, 1.1, 0.3, -0.5))
+                 L = rnorm(6))
 ccw_clone(pp, list(always = ccw_sustained(1), never = ccw_sustained(0)),
           time = "t", treatment = "a", event = "y", covariates = "L")
 }

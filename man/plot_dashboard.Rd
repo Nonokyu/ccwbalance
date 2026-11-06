@@ -2,7 +2,7 @@
 % Please edit documentation in R/plots.R
 \name{plot_dashboard}
 \alias{plot_dashboard}
-\title{Diagnostic dashboard}
+\title{Combined CCW diagnostic dashboard}
 \usage{
 plot_dashboard(
   data,
@@ -15,30 +15,30 @@ plot_dashboard(
 )
 }
 \arguments{
-\item{data}{Long data with weights (see \code{\link[=fit_censoring_model]{fit_censoring_model()}}).}
+\item{data}{Weighted long clone data (see \code{\link[=fit_censoring_model]{fit_censoring_model()}}).}
 
-\item{features}{Feature columns for RRB and the Mahalanobis metric.}
+\item{features}{Feature columns for RRB / Mahalanobis.}
 
-\item{ecdf_feature}{Feature of the ECDF plot.}
+\item{ecdf_feature}{Feature for the ECDF panel.}
 
-\item{ecdf_strategy}{Strategy of the ECDF plot (default: last level).}
+\item{ecdf_strategy}{Strategy for the ECDF panel (default: last level).}
 
-\item{ecdf_times}{Intervals of the ECDF plot.}
+\item{ecdf_times}{Times for the ECDF panel.}
 
 \item{title}{Optional title.}
 
 \item{ridge}{Ridge constant passed to \code{\link[=mahalanobis_rr]{mahalanobis_rr()}}.}
 }
 \value{
-A patchwork object, a gtable (gridExtra) or a named list of
-ggplot objects; the plots are also attached as attribute \code{"plots"}.
+A patchwork object, a gtable (gridExtra) or a named list of plots.
+The individual plots are always attached as attribute \code{"plots"}.
 }
 \description{
-Combines the dynamic Love plot (unweighted and weighted interval RRB),
-the heatmap of weighted interval RRB, the Mahalanobis plot, the
-weight-support plot and an ECDF plot. The panels are arranged with
-patchwork if installed, else with gridExtra; without either, the list of
-plots is returned.
+Computes and composes the dynamic Love plot (unweighted vs weighted), the
+weighted RRB heatmap with IAI/MaxIB margin, the Mahalanobis trajectory, the
+weight-support panel and a selected-time ECDF panel. Uses \code{patchwork} if
+installed, otherwise \code{gridExtra}; if neither is available, returns the list
+of ggplot objects.
 }
 \examples{
 \donttest{

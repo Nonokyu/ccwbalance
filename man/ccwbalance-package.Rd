@@ -11,8 +11,9 @@ Diagnostics for the artificial-censoring weights of clone-censor-weight
 (CCW) analyses: interval and cumulative risk-set reconstruction balance
 (RRB) with distributional (KS) and multivariate (Mahalanobis) versions,
 Jackson-type censoring balance, a conditional parametric null reference
-for the maximum absolute imbalance (MaxIB), an individual-level
-bootstrap, between-strategy (including end-of-grace) standardised mean
+that judges each strategy by the studentised maximum (the largest
+|RRB| / null SD over its strata and history functions) as well as the
+raw maximum absolute imbalance (MaxIB), an individual-level bootstrap, between-strategy (including end-of-grace) standardised mean
 differences, weight-support summaries, plots, tools to build the input
 data and a simulation data-generating mechanism.
 }
@@ -68,11 +69,11 @@ Useful links:
 
 }
 \author{
-\strong{Maintainer}: Yuta Nonomiya \email{ynonomiya.ocum@gmail.com}
+\strong{Maintainer}: Yuta Nonomiya \email{nonomiya.yuta@omu.ac.jp}
 
 Authors:
 \itemize{
-  \item Yuta Nonomiya \email{ynonomiya.ocum@gmail.com}
+  \item Yuta Nonomiya \email{nonomiya.yuta@omu.ac.jp}
 }
 
 }

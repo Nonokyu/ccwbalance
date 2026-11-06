@@ -2,7 +2,7 @@
 % Please edit documentation in R/balance.R
 \name{weight_support}
 \alias{weight_support}
-\title{Weight support and positivity summaries}
+\title{Weight-support and positivity diagnostics by strategy x time}
 \usage{
 weight_support(
   data,
@@ -15,27 +15,26 @@ weight_support(
 )
 }
 \arguments{
-\item{data}{Long data with weights (see \code{\link[=fit_censoring_model]{fit_censoring_model()}}).}
+\item{data}{Weighted long clone data.}
 
-\item{weight}{Weight column of the retained rows.}
+\item{weight}{Weight column of retained clones.}
 
 \item{strategy, time, censored, pi_hat}{Column names.}
 
-\item{pi_threshold}{Threshold for the proportion of small \code{pi_hat}.}
+\item{pi_threshold}{Threshold for \code{Pr(pi_hat < threshold)}.}
 }
 \value{
-A data frame with \verb{strategy, time, n_risk, n_retained, ess, ess_ratio, entropy, pi_min, pi_p01, pi_p05, pr_pi_small, w_mean, w95, w99, w_max}.
+A data frame of diagnostics.
 }
 \description{
-For each stratum: risk-set size, number retained, effective sample size
-\verb{ESS = (sum w)^2 / sum w^2} of the retained rows, \code{ESS / n_risk},
-normalised entropy \verb{-sum p log p / log N} of the positive retained
-weights (\verb{p = w / sum w}), and the mean, 95th and 99th percentiles and
-maximum of the retained weights. The \code{pi_hat} summaries (minimum, 1st
-and 5th percentiles and the proportion below \code{pi_threshold}) are over all
-at-risk rows, including rows where censoring is not possible
-(\code{pi_hat = 1}). These summaries can signal, but not establish, a lack of
-positivity.
+For each strategy and time: risk-set size, number retained, effective
+sample size \verb{ESS = (sum w)^2 / sum w^2} of the retained clones, ESS ratio
+\code{ESS / N_risk}, normalised weight entropy
+\verb{-sum p log p / log N} (\verb{p = w / sum w}), \code{pi_hat} summaries over the
+at-risk rows (min, 1st and 5th percentiles, \code{Pr(pi_hat < 0.05)}), and
+weight quantiles (mean, 95th, 99th, max). These are weight-concentration /
+support metrics, not balance metrics; they can signal but not prove
+positivity failure.
 }
 \examples{
 d <- simulate_ccw(ccw_sim_params(n = 300), seed = 1)

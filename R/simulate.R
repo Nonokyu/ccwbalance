@@ -1,41 +1,48 @@
-#' Parameters of the simulation data-generating mechanism
+#' Default parameters of the CCW simulation data-generating mechanism
 #'
-#' Returns the parameter list of [simulate_ccw()] and [true_risk_ccw()].
-#' Any element can be overridden through `...`; the coefficient vectors
-#' `alpha`, `beta`, `gamma` and `delta` can be overridden partially by
-#' name, e.g. `ccw_sim_params(beta = c(b2 = 0.4))`.
+#' Returns the default parameter list used by [simulate_ccw()]. Any element
+#' can be overridden via `...`. The coefficient vectors `alpha`, `beta`,
+#' `gamma`, `delta` may be overridden partially by name, e.g.
+#' `ccw_sim_params(beta = c(b2 = 0.4))` changes only `beta2`.
 #'
-#' In intervals `k = 0, ..., n_time - 1`:
-#' \deqn{L_k = \alpha_0 + \alpha_1 L_{k-1} + \alpha_2 A_{k-1} + \alpha_3 X +
-#'   \epsilon_k,}
-#' \deqn{logit P(A_k = 1) = \beta_0 + \beta_1 L_k + \beta_2 L_k^2 +
-#'   \beta_3 X + \beta_4 A_{k-1} + \beta_5 L_k X + \beta_6 L_{k-1} +
-#'   \beta_{extra}' X_{extra},}
-#' \deqn{logit P(C_k = 1) = \delta_0 + \delta_1 L_k,}
-#' \deqn{logit P(Y_k = 1) = \gamma_0 + \gamma_1 L_k + \gamma_2 A_k +
-#'   \gamma_3 X + \gamma_4 L_k^2 + \gamma_5 L_k X + \gamma_6 L_{k-1} +
-#'   \gamma_{extra}' X_{extra},}
-#' with `X ~ N(0, 1)`, `epsilon_k ~ N(0, sigma_L^2)`, `L_{-1} = 0`,
-#' `A_{-1} = 0` and `C_k` loss to follow-up (`delta0 = -Inf`, the default,
-#' gives none). With `absorbing = TRUE` (default) treatment stays on once
-#' initiated and `beta4` is unused. The terms `gamma4` to `gamma6` (default
-#' 0) let terms omitted from a censoring model also affect the outcome.
+#' The defaults were chosen so that, under a correctly specified censoring
+#' model, weights stay moderate (worst ESS/N around 0.3) and the CCW/IPCW risk
+#' estimates are close to the true counterfactual risks.
 #'
-#' Extra baseline covariates (`n_extra > 0`, default 0):
-#' `X_extra = rho_extra X + sqrt(1 - rho_extra^2) Z`, `Z ~ N(0, I)`, so that
-#' each is standard normal with correlation `rho_extra` with `X`. They enter
-#' the treatment model with coefficients `beta_extra` (default
-#' `rep(c(0.2, -0.2), length.out = n_extra)`) and the outcome model with
-#' `gamma_extra` (default `rep(0.2, n_extra)`). With `n_extra = 0` no
-#' additional random numbers are drawn.
+#' The DGM (discrete intervals `t = 0, ..., n_time - 1`) is
+#' \deqn{L_t = \alpha_0 + \alpha_1 L_{t-1} + \alpha_2 A_{t-1} + \alpha_3 X + \epsilon_t}
+#' \deqn{\mathrm{logit}\,P(A_t = 1) = \beta_0 + \beta_1 L_t + \beta_2 L_t^2 +
+#'   \beta_3 X + \beta_4 A_{t-1} + \beta_5 L_t X + \beta_6 L_{t-1}
+#'   + \beta_{extra}' X_{extra}}
+#' \deqn{\mathrm{logit}\,P(C^{LTFU}_{t+1} = 1) = \delta_0 + \delta_1 L_t}
+#' \deqn{\mathrm{logit}\,P(Y_{t+1} = 1) = \gamma_0 + \gamma_1 L_t + \gamma_2 A_t + \gamma_3 X
+#'   + \gamma_4 L_t^2 + \gamma_5 L_t X + \gamma_6 L_{t-1}
+#'   + \gamma_{extra}' X_{extra}}
+#' with `X ~ N(0, 1)`, `L_{-1} = 0`, `A_{-1} = 0`.
 #'
-#' The strategies are defined by `window = c(w1, w2)`:
-#' * `g1`: initiate in intervals `0, ..., w1 - 1`;
-#' * `g2`: initiate in intervals `w1, ..., w2 - 1`;
+#' Optional extra baseline covariates (`n_extra > 0`, default 0):
+#' `X_extra = rho_extra X + sqrt(1 - rho_extra^2) Z` with
+#' `Z ~ N(0, I_{n_extra})`, so that each extra covariate is standard normal
+#' with correlation `rho_extra` with `X` and `rho_extra^2` with each other.
+#' They enter the treatment (initiation) logit with coefficients `beta_extra`
+#' (default `rep(c(0.2, -0.2), length.out = n_extra)`) and the outcome logit
+#' with `gamma_extra` (default `rep(0.2, n_extra)`), and are returned by
+#' [simulate_ccw()] as columns `X2, ..., X{n_extra + 1}`. With `n_extra = 0`
+#' no extra random numbers are drawn. The outcome terms
+#' `gamma4`-`gamma6` (default 0) let omitted censoring-model terms also affect
+#' the outcome, which is what turns censoring-model misspecification into
+#' bias (used by the strong-misspecification simulation scenarios). With
+#' `absorbing = TRUE` (default) treatment, once initiated, stays on and
+#' `beta4` is unused.
+#'
+#' Strategies are defined by the interval `window = c(w1, w2)`:
+#' * `g1`: initiate in intervals `0, ..., w1 - 1` (e.g. days 0-30);
+#' * `g2`: initiate in intervals `0, ..., w2 - 1` (e.g. days 0-90), the
+#'   nested longer window that contains the `g1` window;
 #' * `g3`: do not initiate in intervals `0, ..., w2 - 1`.
 #'
 #' @param ... Named overrides.
-#' @return A named list of parameters.
+#' @return A named list.
 #' @export
 #' @examples
 #' str(ccw_sim_params(n = 500))
@@ -72,7 +79,7 @@ ccw_sim_params <- function(...) {
   .resolve_extra(p)
 }
 
-# Resolve and validate the extra-covariate parameters
+# Resolve and validate the extra-covariate parameters of ccw_sim_params().
 .resolve_extra <- function(p) {
   k <- p$n_extra
   if (length(k) != 1 || is.na(k) || k < 0 || k != round(k)) {
@@ -97,8 +104,11 @@ ccw_sim_params <- function(...) {
   p
 }
 
-# Person-period matrices. `regime = NULL` gives the natural course; "g1",
-# "g2" or "g3" sets treatment by the strategy (no loss to follow-up).
+# Simulate the observational person-time matrices.
+# `regime` = NULL -> natural course; otherwise one of "g1","g2","g3" to
+# intervene on treatment (used for the true counterfactual risk; no LTFU).
+# g1/g2: natural initiation up to w1 - 1 / w2 - 1 (g2 is the nested longer
+# window), forced initiation at that interval; g3: no initiation to w2 - 1.
 .sim_paths <- function(p, regime = NULL) {
   n <- p$n
   K <- p$n_time
@@ -140,8 +150,8 @@ ccw_sim_params <- function(...) {
       A <- switch(regime,
         g1 = if (t < w1 - 1) A else if (t == w1 - 1) rep(1, n) else
           if (p$absorbing) rep(1, n) else A,
-        g2 = if (t < w1) rep(0, n) else if (t < w2 - 1) A else
-          if (t == w2 - 1) rep(1, n) else if (p$absorbing) rep(1, n) else A,
+        g2 = if (t < w2 - 1) A else if (t == w2 - 1) rep(1, n) else
+          if (p$absorbing) rep(1, n) else A,
         g3 = if (t <= w2 - 1) rep(0, n) else A,
         stop("Unknown regime: ", regime, call. = FALSE)
       )
@@ -174,26 +184,27 @@ ccw_sim_params <- function(...) {
   })
 }
 
-#' Simulate long data from the data-generating mechanism
+#' Simulate cloned CCW data under the report's DGM
 #'
-#' Simulates observational data from the mechanism of [ccw_sim_params()],
-#' evaluates every individual under the three strategies and applies
-#' artificial censoring in the interval of the first deviation. Returns long
-#' data in the package format (see [ccwbalance-package]).
+#' Simulates observational data from the DGM documented in
+#' [ccw_sim_params()], clones every individual into the three strategies and
+#' applies artificial censoring at the first deviation. Returns long clone data
+#' (one row per clone x strategy x interval in the risk set) following the
+#' package long-data contract.
 #'
-#' Within interval `k` the order is `L_k`, `A_k`, artificial censoring
-#' (`D_k`), loss to follow-up, outcome. A row with `censored_next = 1` has
-#' `event_next = NA`.
+#' Within interval `t` the ordering is `L_t -> A_t -> D_{t+1}` (artificial
+#' censoring) `-> C^{LTFU}_{t+1} -> Y_{t+1}`. A row with `censored_next = 1` has
+#' no observed outcome for that interval (`event_next = NA`).
 #'
 #' @param params Parameter list from [ccw_sim_params()].
 #' @param seed Optional random seed.
-#' @return A data frame with columns `id, strategy, time, at_risk, X, L,
-#'   L_lag, A, A_lag, censor_possible, phase, censored_next, ltfu_next,
-#'   event_next` (with `n_extra > 0`, the columns `X2, ..., X{n_extra + 1}`
+#' @return A data frame with columns `id, strategy, time, at_risk, X, L, L_lag,
+#'   A, A_lag, censor_possible, phase, censored_next, ltfu_next, event_next`
+#'   (with `n_extra > 0`, the baseline columns `X2, ..., X{n_extra + 1}`
 #'   follow `X`).
-#'   `phase` is `"no_init"` (censored if initiating), `"grace_end"`
-#'   (censored if not initiating) or `"none"`. The parameters are attached
-#'   as attribute `"params"`.
+#'   `phase` labels the kind of artificial censoring possible in the row
+#'   (`"no_init"`: censored if initiating; `"grace_end"`: censored if not
+#'   initiating; `"none"`).
 #' @export
 #' @examples
 #' d <- simulate_ccw(ccw_sim_params(n = 200), seed = 1)
@@ -216,7 +227,7 @@ simulate_ccw <- function(params = ccw_sim_params(), seed = NULL) {
 
   cens <- list(
     g1 = ifelse(tau > w1 - 1, w1 - 1, Inf),
-    g2 = ifelse(tau < w1, tau, ifelse(tau > w2 - 1, w2 - 1, Inf)),
+    g2 = ifelse(tau > w2 - 1, w2 - 1, Inf),
     g3 = ifelse(tau <= w2 - 1, tau, Inf)
   )
 
@@ -251,8 +262,7 @@ simulate_ccw <- function(params = ccw_sim_params(), seed = NULL) {
     not_init <- d$A_lag == 0
     d$phase <- switch(g,
       g1 = ifelse(d$time == w1 - 1 & not_init, "grace_end", "none"),
-      g2 = ifelse(d$time < w1 & not_init, "no_init",
-                  ifelse(d$time == w2 - 1 & not_init, "grace_end", "none")),
+      g2 = ifelse(d$time == w2 - 1 & not_init, "grace_end", "none"),
       g3 = ifelse(d$time <= w2 - 1 & not_init, "no_init", "none")
     )
     d$censor_possible <- d$phase != "none"
@@ -273,19 +283,19 @@ simulate_ccw <- function(params = ccw_sim_params(), seed = NULL) {
   out
 }
 
-#' True risk under each simulated strategy
+#' True counterfactual risk under each CCW strategy
 #'
-#' Monte Carlo evaluation of the risk of the outcome by the end of interval
-#' `n_time - 1` under the regimes identified by the weighted analysis of
-#' [simulate_ccw()] data, without loss to follow-up: natural initiation
-#' within the window with initiation forced in its last interval (`g1`;
-#' `g2`, which also prevents initiation before `w1`), or no initiation up
-#' to interval `w2 - 1` (`g3`).
+#' Monte Carlo evaluation of the risk `P(Y by n_time)` under the regimes
+#' identified by the CCW/IPCW analysis of [simulate_ccw()] data: natural
+#' initiation inside the grace window with forced initiation in the last
+#' window interval (`g1`: forced initiation at `w1 - 1`; `g2` is the nested
+#' longer window, forced initiation at `w2 - 1`), or no initiation up to
+#' `w2 - 1` (`g3`). No loss to follow-up.
 #'
-#' @param params Parameter list from [ccw_sim_params()]; `n` is replaced by
+#' @param params Parameter list from [ccw_sim_params()]; `n` is overridden by
 #'   `n_mc`.
 #' @param n_mc Monte Carlo sample size.
-#' @param seed Optional random seed.
+#' @param seed Optional seed.
 #' @return A data frame with `strategy` and `risk`.
 #' @export
 #' @examples

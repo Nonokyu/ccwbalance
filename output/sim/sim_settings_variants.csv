@@ -1,2 +1,2 @@
 "RUN","N_REPS","N_BOOT","N_NULL_DRAWS","N_MC","N_CORES","n_tasks","n_failed","runtime_min"
-"variants","omit_L1_cw_on=200;omit_L1_cw_os=200;omit_L1_cs_on=200;omit_L1_cs_os=200;omit_Lsq_cw_on_g45=200;omit_Lsq_cs_on_g45=200;early_events_b500=200","omit_L1_cw_on=100;omit_L1_cw_os=100;omit_L1_cs_on=100;omit_L1_cs_os=100;omit_Lsq_cw_on_g45=100;omit_Lsq_cs_on_g45=100;early_events_b500=500",500,5e+05,40,1400,0,39.46
+"variants","omit_L1_cw_on=200;omit_L1_cw_os=200;omit_L1_cs_on=200;omit_L1_cs_os=200;omit_Lsq_cw_on_g45=200;omit_Lsq_cs_on_g45=200;early_events_b500=200","omit_L1_cw_on=100;omit_L1_cw_os=100;omit_L1_cs_on=100;omit_L1_cs_os=100;omit_Lsq_cw_on_g45=100;omit_Lsq_cs_on_g45=100;early_events_b500=500",500,5e+05,11,1400,0,141.33

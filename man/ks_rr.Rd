@@ -2,7 +2,7 @@
 % Please edit documentation in R/balance.R
 \name{ks_rr}
 \alias{ks_rr}
-\title{Weighted Kolmogorov-Smirnov reconstruction distance (KS^RR)}
+\title{Weighted-ECDF Kolmogorov-Smirnov reconstruction distance (KS^RR)}
 \usage{
 ks_rr(
   data,
@@ -23,9 +23,9 @@ ks_rr(
 )
 }
 \arguments{
-\item{data}{Long data with weights (see \code{\link[=fit_censoring_model]{fit_censoring_model()}}).}
+\item{data}{Long clone data with weights (see \code{\link[=fit_censoring_model]{fit_censoring_model()}}).}
 
-\item{features}{Character vector of feature columns \code{f(H_k)}.}
+\item{features}{Character vector of feature columns \code{f(H_t)}.}
 
 \item{method}{One or more of \code{"weighted"}, \code{"unweighted"},
 \code{"unstabilized"}, \code{"stabilized"}.}
@@ -35,22 +35,22 @@ ks_rr(
 \item{strategy, time, censored}{Column names.}
 
 \item{w_ref, w_post, pi_hat, q_hat, w_prev_unstab, w_prev_stab}{Weight column
-names (see \code{\link[=fit_censoring_model]{fit_censoring_model()}}).}
+names.}
 
-\item{event}{Outcome column used to carry individuals with the outcome
-forward (cumulative scope).}
+\item{event}{Outcome column used to carry event clones forward in the
+cumulative scope.}
 
-\item{carry_events}{Carry individuals with the outcome forward
-(cumulative scope)?}
+\item{carry_events}{Carry forward clones with the outcome (cumulative
+scope)?}
 }
 \value{
 A data frame with \verb{strategy, time, feature, method, scope, n_risk, n_censored, ks}.
 }
 \description{
-\deqn{KS^{RR}_{j,g}(k) = \sup_x |F^{post}_{j,g,k}(x) - F^{ref}_{j,g,k}(x)|,}
-the largest distance between the weighted empirical distribution
-functions of the post and reference sets of \code{\link[=rrb]{rrb()}} (same scopes, methods
-and zero targets).
+\deqn{KS^{RR}_{j,g}(t) = \sup_x |F^{post,w}_{j,g,t}(x) - F^{pre}_{j,g,t}(x)|}
+using the same reference / post sets and weights as \code{\link[=rrb]{rrb()}} (see there for
+the \code{"interval"} and \code{"cumulative"} scopes and which features are
+0-targeted in each).
 }
 \examples{
 d <- simulate_ccw(ccw_sim_params(n = 300), seed = 1)

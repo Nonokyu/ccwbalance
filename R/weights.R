@@ -1,56 +1,48 @@
-#' Fit the artificial-censoring model and compute the weights
+#' Fit an artificial-censoring model and compute IPCW weights
 #'
-#' Estimates `pi_k = P(D_k = 0 | R_k = 1, H_k)` by logistic regression on the
-#' rows where artificial censoring is possible (`censor_possible`),
-#' separately within each group defined by `by` (default: strategy x
-#' phase). Rows where censoring cannot occur get `pi_hat = 1`.
+#' Estimates `pi_hat = P(D_{t+1} = 0 | R_t = 1, H_t, G = g)` by logistic
+#' regression among rows where artificial censoring is possible
+#' (`censor_possible`), separately within the groups given by `by`
+#' (default: strategy x censoring phase). Rows where censoring cannot occur get
+#' `pi_hat = q_hat = 1`. Misspecification scenarios are obtained simply by
+#' supplying different right-hand-side formulas.
 #'
-#' The stabilising numerator `q_k` must be common to all individuals at risk
-#' in a stratum (strategy x interval). It is estimated on all at-risk rows of
-#' each strategy: with `numerator = NULL` (default) `q_k` is the observed
-#' proportion remaining uncensored in the stratum; with a formula it is a
-#' logistic model fitted per strategy on all at-risk rows, which should then
-#' contain only time terms (a covariate-dependent numerator is not common
-#' to the stratum).
+#' The stabilising numerator `q_t` must be common to all clones at risk in a
+#' strategy x time cell (otherwise the target population changes, e.g. clones
+#' that already initiated would be up-weighted relative to those facing
+#' censoring). It is therefore estimated on **all** at-risk rows of each
+#' strategy: with `numerator = NULL` (default) `q_t` is the observed proportion
+#' of clones remaining uncensored in the strategy x time cell; with a formula
+#' it is a logistic model fitted per strategy on all at-risk rows (it should
+#' contain only baseline covariates and time terms).
 #'
-#' Cumulative weights are formed within individual x strategy:
-#' `W^u_k = prod_{l <= k} 1 / pi_l` (unstabilised) and
-#' `W_k = prod_{l <= k} q_l / pi_l` (stabilised). With `truncate`, the
-#' chosen cumulative weight is capped at that quantile of its distribution
-#' over the retained rows (`D_k = 0`), pooled over strategies and intervals;
-#' the cap is applied to both `w_post` and `w_prev`.
+#' Cumulative weights are `W_t = prod_{k <= t} 1 / pi_k` (unstabilised) and
+#' `W_t = prod_{k <= t} q_k / pi_k` (stabilised), computed within clone.
+#' Optional truncation caps the chosen cumulative weight at the given quantile
+#' of its distribution among retained rows (pooled over strategies and times).
 #'
-#' @param data Long data (see [ccwbalance-package]).
-#' @param formula One-sided formula for the censoring model, e.g.
-#'   `~ L + I(L^2) + X + L:X`, or a named list of formulas. For each model
-#'   group the list element named by the full group label (e.g.
-#'   `"g2.grace_end"`) is used, else the element named by the value of the
-#'   last `by` column (e.g. `"no_init"`), else the element `"default"`.
-#' @param numerator `NULL` (default; observed stratum proportion) or a
-#'   one-sided formula for `q_k`, e.g. `~ factor(time)`.
-#' @param by Columns defining the groups in which separate censoring models
-#'   are fitted.
-#' @param stabilized Use stabilised weights for `w_ref` and `w_post`?
-#' @param truncate `NULL` (no truncation) or a quantile in (0, 1), e.g.
-#'   `0.99`.
+#' @param data Long clone data (see [simulate_ccw()]).
+#' @param formula One-sided formula for the censoring (denominator) model, e.g.
+#'   `~ L + I(L^2) + X + L:X`, or a named list of formulas chosen per model
+#'   group: an element named by the full group label (e.g.
+#'   `"g2.grace_end"`) is used first, then one named by the last `by`
+#'   component (e.g. the phase `"no_init"`), then an element named
+#'   `"default"`.
+#' @param numerator `NULL` (default; nonparametric strategy x time proportion)
+#'   or a one-sided formula for the stabilising numerator `q`, e.g.
+#'   `~ factor(time) + X`.
+#' @param by Grouping columns within which separate models are fitted.
+#' @param stabilized Use stabilised weights for `w_ref`/`w_post`?
+#' @param truncate `NULL` or a quantile in (0, 1), e.g. `0.99`.
 #' @param id,strategy,time,censored,censor_possible Column names.
-#' @param pi_floor Lower bound applied to `pi_hat`.
-#' @return `data`, sorted by strategy, individual and interval, with added
-#'   columns
-#'   * `pi_hat` (`pi_k`) and `q_hat` (`q_k`);
-#'   * `weight_unstab` (`W^u_k`), `weight_stab` (`W_k`) and their values in
-#'     the previous interval, `w_prev_unstab` (`W^u_{k-1}`) and
-#'     `w_prev_stab` (`W_{k-1}`), all untruncated;
-#'   * `weight` and `w_prev`: the chosen scheme's `W_k` and `W_{k-1}`,
-#'     truncated if requested;
-#'   * `w_post` (= `weight`): the estimator weight of a retained row;
-#'   * `w_ref`: the reference weight `w_prev * q_hat` (stabilised) or
-#'     `w_prev` (unstabilised);
-#'   * `weights_stabilized`: the value of `stabilized`.
-#'
-#'   The fitted models are attached as attribute `"models"` and the settings
-#'   (formula, numerator, stabilisation, truncation, cap, groups) as
-#'   attribute `"weighting"`.
+#' @param pi_floor Lower bound applied to `pi_hat` for numerical stability.
+#' @return `data` with added columns `pi_hat, q_hat, weight_unstab,
+#'   weight_stab, w_prev_unstab, w_prev_stab, weight, w_prev, w_ref, w_post,
+#'   weights_stabilized`.
+#'   `w_post` is the (possibly truncated) cumulative weight `W_t` of the
+#'   chosen scheme; `w_ref` is `W_{t-1}` (times `q_t` if stabilised), i.e. the
+#'   weight defining the pre-censoring reference risk set. The fitted models
+#'   are attached as attribute `"models"`.
 #' @export
 #' @examples
 #' d <- simulate_ccw(ccw_sim_params(n = 300), seed = 1)
@@ -97,7 +89,7 @@ fit_censoring_model <- function(data, formula, numerator = NULL,
   }
   data$pi_hat <- pmax(data$pi_hat, pi_floor)
 
-  # stabilising numerator: common to all at-risk rows of a stratum
+  # stabilising numerator: common to all at-risk clones of a strategy x time
   if (is.null(numerator)) {
     data$q_hat <- stats::ave(data$.uncens, data[[strategy]], data[[time]],
                              FUN = mean)
@@ -113,8 +105,7 @@ fit_censoring_model <- function(data, formula, numerator = NULL,
 
   clone <- interaction(data[[strategy]], data[[id]], drop = TRUE)
   cp <- function(x) stats::ave(x, clone, FUN = cumprod)
-  lag1 <- function(x) stats::ave(x, clone,
-                                 FUN = function(z) c(1, z[-length(z)]))
+  lag1 <- function(x) stats::ave(x, clone, FUN = function(z) c(1, z[-length(z)]))
   data$weight_unstab <- cp(1 / data$pi_hat)
   data$weight_stab <- cp(data$q_hat / data$pi_hat)
   data$w_prev_unstab <- lag1(data$weight_unstab)
@@ -140,8 +131,8 @@ fit_censoring_model <- function(data, formula, numerator = NULL,
   data
 }
 
-# Logistic fit returning fitted probabilities (constant if the outcome does
-# not vary)
+# Internal: logistic fit returning fitted probabilities (constant if the
+# outcome does not vary)
 .fit_logit <- function(f, sub) {
   if (length(unique(sub$.uncens)) < 2) {
     return(list(fit = NULL, p = rep(mean(sub$.uncens), nrow(sub))))
@@ -150,18 +141,17 @@ fit_censoring_model <- function(data, formula, numerator = NULL,
   list(fit = fit, p = unname(stats::predict(fit, type = "response")))
 }
 
-#' Weighted discrete-time risk by strategy
+#' Weighted discrete-time risk estimate by strategy
 #'
-#' Weighted Kaplan-Meier-type estimator. The hazard of interval `k` is the
-#' weighted proportion of outcomes among the rows retained in interval `k`
-#' (`D_k = 0` and, if `ltfu` is present, not lost to follow-up), and the
-#' risk by the end of interval `k` is `1 - prod_{l <= k} (1 - h_l)`.
+#' Weighted Kaplan-Meier-type estimator: the interval hazard is the weighted
+#' proportion of events among clones retained (not artificially censored and
+#' not lost to follow-up) in `[t, t+1)`; risk is `1 - prod(1 - h_t)`.
 #'
-#' @param data Long data with weights (see [fit_censoring_model()]).
-#' @param weight Weight column; `NULL` for unweighted.
-#' @param strategy,time,censored,event,ltfu Column names (`ltfu` is ignored
-#'   if `NULL` or absent).
-#' @return A data frame with `strategy, time, hazard, risk`.
+#' @param data Weighted long clone data.
+#' @param weight Weight column (`NULL` for unweighted).
+#' @param strategy,time,censored,event,ltfu Column names (`ltfu` may be
+#'   `NULL`).
+#' @return Data frame with `strategy, time, hazard, risk`.
 #' @export
 #' @examples
 #' d <- simulate_ccw(ccw_sim_params(n = 300), seed = 1)

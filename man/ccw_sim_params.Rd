@@ -2,7 +2,7 @@
 % Please edit documentation in R/simulate.R
 \name{ccw_sim_params}
 \alias{ccw_sim_params}
-\title{Parameters of the simulation data-generating mechanism}
+\title{Default parameters of the CCW simulation data-generating mechanism}
 \usage{
 ccw_sim_params(...)
 }
@@ -10,43 +10,50 @@ ccw_sim_params(...)
 \item{...}{Named overrides.}
 }
 \value{
-A named list of parameters.
+A named list.
 }
 \description{
-Returns the parameter list of \code{\link[=simulate_ccw]{simulate_ccw()}} and \code{\link[=true_risk_ccw]{true_risk_ccw()}}.
-Any element can be overridden through \code{...}; the coefficient vectors
-\code{alpha}, \code{beta}, \code{gamma} and \code{delta} can be overridden partially by
-name, e.g. \code{ccw_sim_params(beta = c(b2 = 0.4))}.
+Returns the default parameter list used by \code{\link[=simulate_ccw]{simulate_ccw()}}. Any element
+can be overridden via \code{...}. The coefficient vectors \code{alpha}, \code{beta},
+\code{gamma}, \code{delta} may be overridden partially by name, e.g.
+\code{ccw_sim_params(beta = c(b2 = 0.4))} changes only \code{beta2}.
 }
 \details{
-In intervals \verb{k = 0, ..., n_time - 1}:
-\deqn{L_k = \alpha_0 + \alpha_1 L_{k-1} + \alpha_2 A_{k-1} + \alpha_3 X +
-  \epsilon_k,}
-\deqn{logit P(A_k = 1) = \beta_0 + \beta_1 L_k + \beta_2 L_k^2 +
-  \beta_3 X + \beta_4 A_{k-1} + \beta_5 L_k X + \beta_6 L_{k-1} +
-  \beta_{extra}' X_{extra},}
-\deqn{logit P(C_k = 1) = \delta_0 + \delta_1 L_k,}
-\deqn{logit P(Y_k = 1) = \gamma_0 + \gamma_1 L_k + \gamma_2 A_k +
-  \gamma_3 X + \gamma_4 L_k^2 + \gamma_5 L_k X + \gamma_6 L_{k-1} +
-  \gamma_{extra}' X_{extra},}
-with \code{X ~ N(0, 1)}, \code{epsilon_k ~ N(0, sigma_L^2)}, \verb{L_\{-1\} = 0},
-\verb{A_\{-1\} = 0} and \code{C_k} loss to follow-up (\code{delta0 = -Inf}, the default,
-gives none). With \code{absorbing = TRUE} (default) treatment stays on once
-initiated and \code{beta4} is unused. The terms \code{gamma4} to \code{gamma6} (default
-0) let terms omitted from a censoring model also affect the outcome.
+The defaults were chosen so that, under a correctly specified censoring
+model, weights stay moderate (worst ESS/N around 0.3) and the CCW/IPCW risk
+estimates are close to the true counterfactual risks.
 
-Extra baseline covariates (\code{n_extra > 0}, default 0):
-\verb{X_extra = rho_extra X + sqrt(1 - rho_extra^2) Z}, \code{Z ~ N(0, I)}, so that
-each is standard normal with correlation \code{rho_extra} with \code{X}. They enter
-the treatment model with coefficients \code{beta_extra} (default
-\code{rep(c(0.2, -0.2), length.out = n_extra)}) and the outcome model with
-\code{gamma_extra} (default \code{rep(0.2, n_extra)}). With \code{n_extra = 0} no
-additional random numbers are drawn.
+The DGM (discrete intervals \verb{t = 0, ..., n_time - 1}) is
+\deqn{L_t = \alpha_0 + \alpha_1 L_{t-1} + \alpha_2 A_{t-1} + \alpha_3 X + \epsilon_t}
+\deqn{\mathrm{logit}\,P(A_t = 1) = \beta_0 + \beta_1 L_t + \beta_2 L_t^2 +
+  \beta_3 X + \beta_4 A_{t-1} + \beta_5 L_t X + \beta_6 L_{t-1}
+  + \beta_{extra}' X_{extra}}
+\deqn{\mathrm{logit}\,P(C^{LTFU}_{t+1} = 1) = \delta_0 + \delta_1 L_t}
+\deqn{\mathrm{logit}\,P(Y_{t+1} = 1) = \gamma_0 + \gamma_1 L_t + \gamma_2 A_t + \gamma_3 X
+  + \gamma_4 L_t^2 + \gamma_5 L_t X + \gamma_6 L_{t-1}
+  + \gamma_{extra}' X_{extra}}
+with \code{X ~ N(0, 1)}, \verb{L_\{-1\} = 0}, \verb{A_\{-1\} = 0}.
 
-The strategies are defined by \code{window = c(w1, w2)}:
+Optional extra baseline covariates (\code{n_extra > 0}, default 0):
+\verb{X_extra = rho_extra X + sqrt(1 - rho_extra^2) Z} with
+\verb{Z ~ N(0, I_\{n_extra\})}, so that each extra covariate is standard normal
+with correlation \code{rho_extra} with \code{X} and \code{rho_extra^2} with each other.
+They enter the treatment (initiation) logit with coefficients \code{beta_extra}
+(default \code{rep(c(0.2, -0.2), length.out = n_extra)}) and the outcome logit
+with \code{gamma_extra} (default \code{rep(0.2, n_extra)}), and are returned by
+\code{\link[=simulate_ccw]{simulate_ccw()}} as columns \verb{X2, ..., X\{n_extra + 1\}}. With \code{n_extra = 0}
+no extra random numbers are drawn. The outcome terms
+\code{gamma4}-\code{gamma6} (default 0) let omitted censoring-model terms also affect
+the outcome, which is what turns censoring-model misspecification into
+bias (used by the strong-misspecification simulation scenarios). With
+\code{absorbing = TRUE} (default) treatment, once initiated, stays on and
+\code{beta4} is unused.
+
+Strategies are defined by the interval \code{window = c(w1, w2)}:
 \itemize{
-\item \code{g1}: initiate in intervals \verb{0, ..., w1 - 1};
-\item \code{g2}: initiate in intervals \verb{w1, ..., w2 - 1};
+\item \code{g1}: initiate in intervals \verb{0, ..., w1 - 1} (e.g. days 0-30);
+\item \code{g2}: initiate in intervals \verb{0, ..., w2 - 1} (e.g. days 0-90), the
+nested longer window that contains the \code{g1} window;
 \item \code{g3}: do not initiate in intervals \verb{0, ..., w2 - 1}.
 }
 }
