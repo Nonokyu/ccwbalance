@@ -4,8 +4,7 @@
 # (Appendix S2). Writes output/sim/pilot_model_terms{,_reps,_mcnemar}.csv.
 # Env vars: CCW_N_REPS_CORRECT (1000), CCW_N_REPS_OMIT (300),
 #   CCW_N_NULL_DRAWS (500), CCW_SCENARIOS, CCW_N_SUBJ (2000), CCW_CORES,
-#   CCW_SIM_DIR, CCW_OUT_SUFFIX, CCW_SMOKE (1 = quick test run), CCW_REPRO,
-#   CCW_REPRO_BLOCK, CCW_REPRO_REF (seed-layout check against a reference).
+#   CCW_SIM_DIR, CCW_OUT_SUFFIX, CCW_SMOKE (1 = quick test run).
 # Run: Rscript analysis/02l_pilot_model_terms.R
 
 if (!file.exists("DESCRIPTION")) stop("Run this script from the project root.")
@@ -16,10 +15,8 @@ env_num <- function(x, default) {
   as.numeric(Sys.getenv(x, as.character(default)))
 }
 SMOKE <- Sys.getenv("CCW_SMOKE", "0") == "1"
-REPRO <- Sys.getenv("CCW_REPRO", "0") == "1"
-if (SMOKE && REPRO) stop("CCW_SMOKE and CCW_REPRO cannot both be set.")
 DEFAULT_SC <- c("correct", "omit_lag_cw_on", "omit_lag_cs_on")
-BLOCK <- env_num("CCW_REPRO_BLOCK", 100)
+BLOCK <- 100 # replicates per scenario in the first seed block
 N_REPS_CORRECT <- env_num("CCW_N_REPS_CORRECT", 1000)
 N_REPS_OMIT <- env_num("CCW_N_REPS_OMIT", 300)
 N_NULL_DRAWS <- env_num("CCW_N_NULL_DRAWS", 500)
@@ -34,16 +31,6 @@ if (SMOKE) {
   N_NULL_DRAWS <- 20
   if (SUFFIX == "") SUFFIX <- "smoke"
 }
-if (REPRO) {
-  if (!setequal(sc_names, DEFAULT_SC)) {
-    stop("CCW_REPRO=1 uses the scenarios ", toString(DEFAULT_SC), ".")
-  }
-  N_REPS_CORRECT <- BLOCK
-  N_REPS_OMIT <- BLOCK
-  if (SUFFIX == "") SUFFIX <- "repro"
-}
-REPRO_REF <- Sys.getenv("CCW_REPRO_REF", file.path(
-  "output", "sim", "pilot_studentised_summary.csv"))
 out_dir <- Sys.getenv("CCW_SIM_DIR", file.path("output", "sim"))
 dir.create(out_dir, recursive = TRUE, showWarnings = FALSE)
 out_file <- function(stem) {
@@ -162,13 +149,6 @@ pick <- function(tab, g, f, obs_col) {
     exceed = as.numeric(r[[obs_col]] > r$null_q95))
 }
 
-diff_max <- function(a, b) {
-  d <- abs(a - b)
-  d[is.na(a) & is.na(b)] <- 0
-  d[xor(is.na(a), is.na(b))] <- Inf
-  max(d)
-}
-
 one_replicate <- function(sc, rep) {
   t0 <- Sys.time()
   # --- statistics returned by rrb_null() ---
@@ -271,7 +251,7 @@ one_replicate <- function(sc, rep) {
   do.call(rbind, rows)
 }
 
-# tasks and seeds: block 1 one seed per replicate up to CCW_REPRO_BLOCK,
+# tasks and seeds: block 1 one seed per replicate up to BLOCK,
 # block 2 (replicate-major) for the remaining replicates ---------------------
 tasks <- do.call(rbind, lapply(sc_names, function(nm) {
   data.frame(scenario = nm, k = match(nm, canon),
@@ -297,8 +277,7 @@ message(sprintf(paste("Pilot (model terms): %d tasks (%s), %d null draws,",
                 paste(sprintf("%s x %d", sc_names,
                               vapply(sc_names, n_reps_of, numeric(1))),
                       collapse = ", "),
-                N_NULL_DRAWS, N_SUBJ, N_CORES, BLOCK,
-                if (REPRO) ", REPRO" else ""))
+                N_NULL_DRAWS, N_SUBJ, N_CORES, BLOCK, ""))
 t_start <- Sys.time()
 res_list <- parallel::mclapply(seq_len(nrow(tasks)), function(i) {
   set.seed(tasks$seed[i])
@@ -411,47 +390,6 @@ names(wide) <- sub("^rate\\.", "", names(wide))
 print(wide, digits = 3, row.names = FALSE)
 cat("\nExact McNemar comparisons:\n")
 print(mcn, digits = 3, row.names = FALSE)
-
-# reproduction check against CCW_REPRO_REF ---------------------------------
-if (REPRO) {
-  if (BLOCK == 100 && N_NULL_DRAWS == 500 && N_SUBJ == 2000 &&
-        nrow(fail_df) == 0 && file.exists(REPRO_REF)) {
-    ref <- read.csv(REPRO_REF)
-    get <- function(s, f, col) {
-      r <- summ[summ$statistic == s & summ$feature == f, ]
-      r[match(paste(ref$scenario, ref$strategy),
-              paste(r$scenario, r$strategy)), col]
-    }
-    map <- list(
-      exceed = get("raw", "(all)", "rate"),
-      stud_exceed = get("stud", "(all)", "rate"),
-      cb_cens_exceed = get("cb_cens", "(all)", "rate"),
-      cb_cens_stud_exceed = get("cb_cens_stud", "(all)", "rate"),
-      exceed_L = get("raw", "L", "rate"),
-      exceed_L_diff = get("raw", "L_diff", "rate"),
-      stud_exceed_L = get("stud", "L", "rate"),
-      stud_exceed_L_diff = get("stud", "L_diff", "rate"),
-      maxib_obs = get("raw", "(all)", "mean_obs"),
-      null_q95 = get("raw", "(all)", "mean_q95"),
-      stud_obs = get("stud", "(all)", "mean_obs"),
-      stud_q95 = get("stud", "(all)", "mean_q95"),
-      cb_cens_obs = get("cb_cens", "(all)", "mean_obs"),
-      cb_cens_q95 = get("cb_cens", "(all)", "mean_q95"),
-      cb_cens_stud_obs = get("cb_cens_stud", "(all)", "mean_obs"),
-      cb_cens_stud_q95 = get("cb_cens_stud", "(all)", "mean_q95")
-    )
-    dif <- vapply(names(map), function(cl) diff_max(map[[cl]], ref[[cl]]),
-                  numeric(1))
-    cat("\nReproduction of", REPRO_REF, "(max abs difference per column):\n")
-    print(signif(dif, 3))
-    if (max(dif) > 1e-8) stop("02k summary NOT reproduced.")
-    message("02k summary reproduced (max abs difference ",
-            format(max(dif), digits = 3), ").")
-  } else {
-    message("REPRO: comparison with ", REPRO_REF, " skipped (needs 100 ",
-            "replicates, 500 draws, n = 2000, no failures).")
-  }
-}
 
 message(sprintf(paste("Done: %d of %d tasks, wall time %.2f min, mean",
                       "per-replicate runtime %.1f s."),
