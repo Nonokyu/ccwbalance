@@ -1,5 +1,7 @@
 # ccwbalance
 
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.24013295.svg)](https://doi.org/10.5281/zenodo.24013295)
+
 ccwbalance provides diagnostics for the artificial-censoring weights of
 clone-censor-weight (CCW) analyses in target trial emulation. Its main
 diagnostic is risk-set reconstruction balance (RRB). Interval RRB checks
@@ -161,6 +163,11 @@ data, the run order and the outputs behind each table and figure.
 
 Nonomiya Y. Risk-set reconstruction balance: zero-targeted diagnostics for
 artificial censoring in clone–censor–weight analyses. In preparation.
+
+Software: Nonomiya Y. ccwbalance: Artificial-Censoring Diagnostics for
+Clone-Censor-Weight Analyses, version 0.1.0. Zenodo; 2026.
+doi: [10.5281/zenodo.24013295](https://doi.org/10.5281/zenodo.24013295)
+(all versions: [10.5281/zenodo.24013294](https://doi.org/10.5281/zenodo.24013294)).
 
 ## License
 
