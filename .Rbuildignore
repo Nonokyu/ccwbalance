@@ -6,3 +6,4 @@
 ^analysis$
 ^output$
 ^data-raw$
+^\.zenodo\.json$

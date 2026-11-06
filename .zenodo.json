@@ -1,0 +1,21 @@
+{
+  "title": "ccwbalance: Artificial-Censoring Diagnostics for Clone-Censor-Weight Analyses",
+  "upload_type": "software",
+  "version": "0.1.0",
+  "description": "R package and reproduction code for risk-set reconstruction balance (RRB), zero-targeted diagnostics for artificial censoring in clone-censor-weight analyses of target trial emulation. The repository contains the package, the simulation and case-study scripts, the scenario definitions and the saved simulation outputs that reproduce the tables and figures of the accompanying manuscript.",
+  "creators": [
+    {
+      "name": "Nonomiya, Yuta",
+      "affiliation": "Graduate School of Informatics, Osaka Metropolitan University; German Research Center for Artificial Intelligence (DFKI)",
+      "orcid": "0000-0003-0511-0244"
+    }
+  ],
+  "license": "MIT",
+  "keywords": [
+    "clone-censor-weight",
+    "target trial emulation",
+    "inverse probability of censoring weighting",
+    "balance diagnostics",
+    "R package"
+  ]
+}
