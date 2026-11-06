@@ -2,7 +2,7 @@
 % Please edit documentation in R/simulate.R
 \name{simulate_ccw}
 \alias{simulate_ccw}
-\title{Simulate cloned CCW data under the report's DGM}
+\title{Simulate cloned CCW data under the simulation DGM}
 \usage{
 simulate_ccw(params = ccw_sim_params(), seed = NULL)
 }

@@ -85,8 +85,8 @@ even under correct weighting; it is descriptive only.
 censoring);
 \item \code{"unstabilized"}: interval scope \verb{W_\{t-1\}} / \verb{W_\{t-1\} / pi_t}; cumulative
 scope 1 / \code{W_t} (unstabilised);
-\item \code{"stabilized"}: interval scope \verb{W_\{t-1\} q_t} / \verb{W_\{t-1\} q_t / pi_t} (as in
-the report's formula); cumulative scope 1 / \code{W_t^s} (carried event clones
+\item \code{"stabilized"}: interval scope \verb{W_\{t-1\} q_t} / \verb{W_\{t-1\} q_t / pi_t};
+cumulative scope 1 / \code{W_t^s} (carried event clones
 are extended with the cell numerators \code{q_k}, which requires the default
 numerator of \code{\link[=fit_censoring_model]{fit_censoring_model()}}; a warning is given otherwise);
 \item \code{"weighted"}: columns \code{w_ref} / \code{w_post} as produced by

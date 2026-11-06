@@ -1,108 +1,12 @@
 # 02m_pilot_g2_cause.R ---------------------------------------------------------
-# Pilot: why is the per-strategy studentised maximum of the interval RRB
-# conservative for g2 under a correctly specified censoring model?
-#
-# Background (dev/note_mac_studio_calibration.md, sections 3-5): with the
-# correct model the studentised maximum max |RRB / null SD| (cells x history
-# functions of one strategy, compared with the null 95th percentile of the
-# same statistic) exceeds at about 0.02 (g1: one censoring cell at t = 2),
-# 0.015 (g2: one cell at t = 8) and 0.05 (g3: pooled logistic over t = 0..8,
-# nine cells). Dropping the censoring-model terms from the maximum
-# (02l_pilot_model_terms.R) restores g1 but not g2. This script decomposes
-# the null reference PER STRATEGY in the style of 02i_null_decomposition.R
-# (pooled, raw MaxIB) and 02h_null_oracle.R (pure oracle, pooled); these
-# two earlier checks are kept in the development repository only.
-#
-# Per replicate: simulate the scenario, build the history functions, fit the
-# scenario's censoring model (pi_hat, w_ref), compute the TRUE probability
-# pi = P(D_{t+1} = 0 | H_t) from the DGM (true_pi(), as in 02i). Diagnostic
-# entries: strategy x time cells of g1, g2, g3 with >= 1 censored row and a
-# non-NA package RRB (as rrb_null()) x the 8 history functions X, L, L_sq,
-# L_lagprod, L_diff, L_cummean, L_gt0, L_x_X.
-#
-# Reference variants of the interval RRB:
-#   all   the package definition: reference = whole risk set of the cell
-#         (weights w_ref), retained set = rows with D = 0 (w_ref / pi)
-#   cens  the same on the censorable rows only (censor_possible == TRUE):
-#         rows that cannot be censored (pi = 1, e.g. individuals of g1 / g2
-#         who already initiated) leave both the reference and the retained
-#         set. In the simulated data g1 (t = 2) and g2 (t = 8) cells have
-#         such rows, the g3 cells do not, so for g3 both variants agree
-#         exactly (checked, column check_cens_eq).
-# Observed RRB: obs_fit with pi_hat (all: equals rrb(scope = "interval",
-# w_post = w_ref / pi_hat); asserted to 1e-10), obs_true with the true pi.
-#
-# Null schemes (coupled within-individual redraw of rrb_null(); every draw
-# shares one set of uniforms across the schemes; refitted or drawing pi
-# floored at 1e-6):
-#   fit_refit     draw from pi_hat, refit (= rrb_null(); checked exactly
-#                 when CCW_CHECK_PKG = 1, see below)
-#   fit_norefit   draw from pi_hat, denominators pi_hat
-#   true_refit    draw from the true pi, refit
-#   true_norefit  draw from the true pi, denominators the true pi
-# Test pairs (null scheme vs observed RRB), each for both reference
-# variants:
-#   S1 fit_refit vs obs_fit (the package), S2 fit_norefit vs obs_fit,
-#   S3 true_refit vs obs_fit, S4 true_norefit vs obs_fit,
-#   S5 true_norefit vs obs_true (oracle; exact per cell by construction)
-# Power scenarios use S1 only.
-# Statistics per pair x variant x strategy g (entries of g with a non-NA
-# observed value): raw maximum (maxib_obs, maxib_q95, maxib_p, exceed_raw),
-# studentised maximum with the per-entry SD of the scheme's draws as scale
-# (entries with NA / non-positive SD excluded, n_excluded; stud_obs,
-# stud_q95, stud_p, exceed_stud) and the studentised exceedance per history
-# function (exceed_stud_<f>: the function-level test for the single-cell g1
-# and g2, the maximum over the nine cells for g3). Structure of the
-# strategy's diagnostic cells: n_cells, n_risk, n_censorable, n_censored,
-# n_retained_cens (censorable, D = 0) and mean_inv_pihat_ret (mean of
-# 1 / pi_hat over the retained censorable rows); for g2 this is its t = 8
-# cell.
-#
-# Scenarios (replicates):
-#   correct         P1-01, n = 2000 (1000)   calibration, S1-S5
-#   correct_n300    P2-01, n = 300   (500)   calibration, S1-S5
-#   omit_lag_cs_on  run main, n = 2000 (300) power, S1
-#   omit_L_cs_on    run main, n = 2000 (300) power, S1
-#
-# Outputs (output/sim/, suffix "_<CCW_OUT_SUFFIX>" if set):
-#   pilot_g2_cause.csv          one row per scenario x rep x reference x
-#                               pair x strategy (quantities above, null_seed,
-#                               check columns, runtime_sec)
-#   pilot_g2_cause_summary.csv  per scenario x reference x pair x strategy:
-#     n_rep, exceed_raw / exceed_stud with binomial SEs, mean null q95 (raw,
-#     stud), mean and MC q95 of maxib_obs and stud_obs, the eight
-#     exceed_stud_<f> rates, mean n_excluded and the structure means
-#   pilot_g2_cause_mcnemar.csv  exact McNemar comparisons of exceed_stud,
-#     per scenario x reference x strategy: S1 vs each other pair (same
-#     reference), and S1 cens vs S1 all; n_pairs, n_both, n_a_only,
-#     n_b_only, rate_a, rate_b, p_mcnemar (exact two-sided binomial test of
-#     the discordant pairs; 1 if there are none)
-#
-# Configuration (environment variables):
-#   CCW_N_REPS_CORRECT  replicates of correct                        [1000]
-#   CCW_N_REPS_N300     replicates of correct_n300                    [500]
-#   CCW_N_REPS_POWER    replicates of each power scenario             [300]
-#   CCW_N_REPS_SCALE    multiplies every replicate count                [1]
-#   CCW_N_NULL_DRAWS    null draws per replicate                      [500]
-#   CCW_SCENARIOS       comma-separated subset of the scenarios   [all four]
-#   CCW_CORES           parallel workers (parallel::mclapply)
-#                                                      [detectCores() - 1]
-#   CCW_OUT_SUFFIX      output suffix                                   [""]
-#   CCW_CHECK_PKG       1 = also run rrb_null() with the same null seed and
-#                       stop unless the S1 `all` per-strategy raw and
-#                       studentised statistics equal its maxib / maxib_stud
-#                       tables (doubles the S1 cost)       [1 if smoke, 0]
-#   CCW_SMOKE           1 = 3 replicates per scenario, 20 draws, suffix
-#                       "smoke"                                          [0]
-# Random numbers: RNGkind("L'Ecuyer-CMRG"); set.seed(20261103); one stream
-# per task (scenario x replicate, scenarios in the order above, replicate
-# within scenario). Inside a task: simulate_ccw(), the null seed by
-# sample.int(), then set.seed(null seed) before the draws, as in 02i. The
-# n = 2000 scenarios are listed (and hence start) first.
-#
-# Run from the project root:
-#   CCW_CORES=40 Rscript analysis/02m_pilot_g2_cause.R
-#   CCW_SMOKE=1 CCW_CORES=4 Rscript analysis/02m_pilot_g2_cause.R
+# Per-strategy decomposition of the null reference of the interval RRB
+# (Supporting Table S1): exceedance of the raw and studentised maxima under
+# fitted vs true censoring probabilities, with and without refitting, on the
+# whole risk set ("all") or the censorable rows ("cens"); test pairs S1-S5.
+# Writes output/sim/pilot_g2_cause{,_summary,_mcnemar}.csv.
+# Env vars: CCW_N_REPS_{CORRECT,N300,POWER,SCALE}, CCW_N_NULL_DRAWS (500),
+#   CCW_SCENARIOS, CCW_CORES, CCW_OUT_SUFFIX, CCW_CHECK_PKG, CCW_SMOKE.
+# Run: Rscript analysis/02m_pilot_g2_cause.R
 
 if (!file.exists("DESCRIPTION")) stop("Run this script from the project root.")
 suppressMessages(pkgload::load_all(".", quiet = TRUE))
@@ -163,7 +67,7 @@ miss <- setdiff(sc_names, names(scenarios))
 if (length(miss) > 0) stop("Unknown scenario(s): ", toString(miss))
 sc_names <- intersect(names(scenarios), sc_names)
 
-# true P(remain uncensored | H_t) from the DGM (simulate_ccw(); as in 02i)
+# true P(remain uncensored | H_t) from the DGM (simulate_ccw())
 true_pi <- function(d, pars) {
   b <- pars$beta
   lp <- b[["b0"]] + b[["b1"]] * d$L + b[["b2"]] * d$L^2 + b[["b3"]] * d$X +
@@ -177,8 +81,8 @@ true_pi <- function(d, pars) {
   ifelse(ph == "no_init", 1 - p_init, ifelse(ph == "grace_end", p_init, 1))
 }
 
-# maximum statistic over the selected entries (logic of .null_maxib(), as
-# 02l's max_stat(); also returns the number of excluded entries)
+# maximum statistic over the selected entries (logic of .null_maxib()); also
+# returns the number of excluded entries
 max_stat <- function(obs, sims, sel, scale = NULL) {
   sel <- sel & !is.na(obs)
   n_exc <- 0

@@ -1,129 +1,12 @@
 # 02l_pilot_model_terms.R -----------------------------------------------------
-# Pilot: does leaving the censoring-model terms out of the studentised
-# maximum in "single-cell fit groups" restore its calibration?
-#
-# Background (an earlier pilot, 02k_pilot_studentised.R, kept in the
-# development repository only; its results are not in the manuscript;
-# correct model): for the
-# initiate-by-grace-end strategies g1 and g2 the studentised maximum
-# max |RRB / null SD| is conservative and the per-function exceedance is
-# lowest for X, L, L_sq and L_x_X, the terms of the censoring model
-# ~ L + I(L^2) + X + L:X. fit_censoring_model() fits one logistic model per
-# strategy x phase over the censor_possible rows; for g1 and g2 the
-# grace_end group lies in a single time cell, so the score equations of
-# the fit (in the data and in every refitted null draw) act on exactly one
-# diagnostic cell. In g3 the no_init group pools several cells.
-#
-# The simulation, the censoring-model fit and the rrb_null() call are those
-# of 02k (same helpers, same random-number use), so raw, stud, cb_cens and
-# cb_cens_stud and the per-function raw/stud exceedances reproduce 02k for
-# the same task seeds (see Random numbers).
-#
-# Definitions (per replicate and strategy g; entries are the strategy-g
-# cell x history-function pairs of rrb_null()'s cells with a non-NA
-# observed value; studentised statistics also drop entries whose null SD is
-# NA or <= 0; for every statistic obs = max over the used entries of the
-# |value| (divided by the null SD if studentised), the null maxima are the
-# same maxima per draw, q95 = their 95th percentile, p = (1 + #{null >=
-# obs}) / (1 + #{non-NA null}), exceed = obs > q95, entries = number of
-# entries used):
-#   raw                interval RRB, all entries (= 02k maxib_obs)
-#   stud               RRB / null_sd, all entries (= 02k stud_obs)
-#   stud_rule          as stud, but in every "single-fit-group cell" (below)
-#                      the model-term functions are dropped
-#   stud_nomodel       as stud, model-term functions dropped in all cells
-#   raw_rule           as raw, with the exclusion of stud_rule
-#   cb_cens            censorable-row censoring balance, raw (= 02k cb_cens)
-#   cb_cens_stud       cb_cens / cb_cens_null_sd (= 02k cb_cens_stud)
-#   cb_cens_stud_rule  as cb_cens_stud with the exclusion of stud_rule
-#   raw_ldiff01, raw_ldiff10, stud_ldiff01, stud_ldiff10
-#                      raw / stud recomputed with the L_diff entries of the
-#                      observed RRB and of the null draws multiplied by 0.1
-#                      / 10 (post hoc; RRB and its draws are linear in the
-#                      feature, the null SD is recomputed from the scaled
-#                      draws). The studentised maximum must be invariant:
-#                      the script stops if any stud_ldiff* differs from stud
-#                      (relative 1e-8; exceed must be equal).
-# Single-fit-group cell: the censoring-model fit groups are the levels of
-# the `by` columns of fit_censoring_model() (strategy x phase) over the
-# censor_possible rows. A diagnostic cell (strategy x time) is flagged when
-# every fit group with censorable rows in the cell has all of its
-# censorable rows in that one cell (determined from the data of each
-# replicate, not by strategy). Model-term functions of a cell: the terms of
-# the censoring formula of its fit group(s) (same lookup as
-# fit_censoring_model() if the formula is a list), mapped by
-#   X -> X, L -> L, I(L^2) -> L_sq, L:X (or X:L) -> L_x_X,
-#   any other term that is itself a monitored function name -> itself
-#   (e.g. X2, ..., X9 of the manycov run);
-# any other term is an error, as is a mapped function that is not
-# monitored.
-#
-# Outputs (<CCW_SIM_DIR>, suffix "_<CCW_OUT_SUFFIX>" if set):
-#   pilot_model_terms_reps.csv     one row per scenario x rep x strategy:
-#     null_seed, n, <stat>_{obs,q95,p,exceed,entries} for the statistics
-#     above, raw_exceed_<f> / stud_exceed_<f> per history function f (02k's
-#     per-feature sets), n_flagged (flagged diagnostic cells),
-#     flagged_times, model_feats, check_maxdiff (max abs difference of
-#     raw / stud / cb_cens / cb_cens_stud from rrb_null()'s own tables; the
-#     script stops if > 1e-10), scale_maxdiff, runtime_sec
-#   pilot_model_terms.csv          scenario x strategy x statistic x feature
-#     ("(all)" for the statistics above; per-function rows for raw/stud):
-#     n_rep (successful replicates), n_failed (failed tasks of the
-#     scenario), n_eval (non-NA exceed), rate, se (binomial), mean_obs,
-#     mean_q95, mean_entries
-#   pilot_model_terms_mcnemar.csv  scenario x strategy x comparison (a vs
-#     b: stud_rule vs raw, stud_rule vs stud, cb_cens_stud_rule vs
-#     cb_cens_stud): n_pairs, n_both, n_a_only, n_b_only, rate_a, rate_b,
-#     p_mcnemar (exact two-sided binomial test of the discordant pairs; 1
-#     if there are none)
-#
-# Configuration (environment variables):
-#   CCW_N_REPS_CORRECT  replicates of scenario "correct"             [1000]
-#   CCW_N_REPS_OMIT     replicates of every other scenario            [300]
-#   CCW_N_NULL_DRAWS    null-reference draws per replicate            [500]
-#   CCW_SCENARIOS       comma-separated scenario names of run main
-#                         [correct,omit_lag_cw_on,omit_lag_cs_on]
-#   CCW_N_SUBJ          individuals per replicate (unless the scenario
-#                       sets n)                                      [2000]
-#   CCW_CORES           parallel workers (parallel::mclapply)
-#                                                      [detectCores() - 1]
-#   CCW_SIM_DIR         output directory                      [output/sim]
-#   CCW_OUT_SUFFIX      output suffix                                   [""]
-#   CCW_SMOKE           1 = 3 replicates per scenario, 20 draws, suffix
-#                       "smoke"                                         [0]
-#   CCW_REPRO           1 = reproduce 02k: the three default scenarios,
-#                       CCW_REPRO_BLOCK replicates each, suffix "repro";
-#                       with 100 replicates, 500 draws and n = 2000 the
-#                       summary is compared with CCW_REPRO_REF            [0]
-#   CCW_REPRO_BLOCK     replicates per scenario of 02k's seed layout (02k's
-#                       CCW_N_REPS)                                    [100]
-#   CCW_REPRO_REF       02k summary (not distributed here; the
-#                       comparison is skipped when the file is missing)
-#                         [output/sim/pilot_studentised_summary.csv]
-#
-# Random numbers (one L'Ecuyer-CMRG stream per scenario x replicate task):
-# RNGkind("L'Ecuyer-CMRG"); set.seed(20261102). Scenarios are indexed in the
-# canonical order k = 1..K: correct, omit_lag_cw_on, omit_lag_cs_on, then
-# the other scenarios of ccw_scenarios("main") in their order (K = 20).
-# Block 1: seeds1 <- sample.int(.Machine$integer.max, B * K) with B =
-# CCW_REPRO_BLOCK; replicate r <= B of scenario k gets seeds1[(k - 1) * B +
-# r]. This is 02k's layout (tasks expand.grid(rep = 1:B, s), seeds
-# sample.int(.Machine$integer.max, nrow(tasks))): sample.int() draws its
-# values sequentially, so the first 3B values equal 02k's draw for its
-# three default scenarios and replicate r of those scenarios uses 02k's
-# seed for replicate r of a CCW_N_REPS = B run (for any subset or order of
-# CCW_SCENARIOS). Block 2 (replicates r > B), drawn next from the same
-# stream: seeds2 <- sample.int(.Machine$integer.max, (R - B) * K) with R the
-# largest replicate count; replicate r of scenario k gets seeds2[(r - B - 1)
-# * K + k] (replicate-major, so a seed does not depend on R). Inside a task
-# set.seed(seed) is followed by exactly 02k's calls (simulate_ccw(),
-# make_history_features(), fit_censoring_model(), the rrb_null() seed drawn
-# by sample.int(), rrb_null()); nothing below draws random numbers.
-#
-# Run from the project root:
-#   CCW_CORES=11 Rscript analysis/02l_pilot_model_terms.R
-#   CCW_SMOKE=1 CCW_CORES=2 Rscript analysis/02l_pilot_model_terms.R
-#   CCW_REPRO=1 CCW_CORES=11 Rscript analysis/02l_pilot_model_terms.R
+# Per-strategy null exceedance of the raw and studentised maxima, with and
+# without the censoring-model terms in cells that form a single fit group
+# (Appendix S2). Writes output/sim/pilot_model_terms{,_reps,_mcnemar}.csv.
+# Env vars: CCW_N_REPS_CORRECT (1000), CCW_N_REPS_OMIT (300),
+#   CCW_N_NULL_DRAWS (500), CCW_SCENARIOS, CCW_N_SUBJ (2000), CCW_CORES,
+#   CCW_SIM_DIR, CCW_OUT_SUFFIX, CCW_SMOKE (1 = quick test run), CCW_REPRO,
+#   CCW_REPRO_BLOCK, CCW_REPRO_REF (seed-layout check against a reference).
+# Run: Rscript analysis/02l_pilot_model_terms.R
 
 if (!file.exists("DESCRIPTION")) stop("Run this script from the project root.")
 suppressMessages(pkgload::load_all(".", quiet = TRUE))
@@ -177,7 +60,7 @@ scenarios <- all_scen[sc_names]
 canon <- c(DEFAULT_SC, setdiff(names(all_scen), DEFAULT_SC))
 n_reps_of <- function(nm) if (nm == "correct") N_REPS_CORRECT else N_REPS_OMIT
 
-# monitored history functions (as in 02_simulation_study.R and 02k)
+# monitored history functions (as in 02_simulation_study.R)
 all_feats <- c("X", "L", "L_sq", "L_lagprod", "L_diff", "L_cummean",
                "L_gt0", "L_x_X")
 feats_of <- function(sc) c(all_feats, as.character(sc$extra_feats))
@@ -214,8 +97,8 @@ pick_formula <- function(formula, label, last) {
   stop("No formula for censoring-model group '", label, "'.", call. = FALSE)
 }
 
-# per strategy x time cell with censorable rows: fit groups present, flag
-# "every fit group of the cell lies entirely in this cell", model functions
+# per strategy x time cell: flag cells whose fit groups lie entirely in the
+# cell, and the model-term functions of the cell
 rule_cells <- function(w, feats) {
   wt <- attr(w, "weighting")
   by <- wt$by
@@ -269,7 +152,7 @@ max_stat <- function(obs, sims, sel, scale = NULL) {
     exceed = as.numeric(m_obs > q95), entries = sum(sel))
 }
 
-# row of a maxib table (as 02k's pick())
+# row of a maxib table
 pick <- function(tab, g, f, obs_col) {
   r <- tab[tab$strategy == g & tab$feature == f, , drop = FALSE]
   if (nrow(r) == 0 || r$n_cells == 0) {
@@ -288,7 +171,7 @@ diff_max <- function(a, b) {
 
 one_replicate <- function(sc, rep) {
   t0 <- Sys.time()
-  # --- exactly 02k's path ---
+  # --- statistics returned by rrb_null() ---
   pars <- do.call(ccw_sim_params, sc$params)
   if (is.null(sc$params[["n"]])) pars$n <- N_SUBJ
   d <- simulate_ccw(pars)
@@ -388,7 +271,8 @@ one_replicate <- function(sc, rep) {
   do.call(rbind, rows)
 }
 
-# tasks and seeds (see Random numbers) ---------------------------------------
+# tasks and seeds: block 1 one seed per replicate up to CCW_REPRO_BLOCK,
+# block 2 (replicate-major) for the remaining replicates ---------------------
 tasks <- do.call(rbind, lapply(sc_names, function(nm) {
   data.frame(scenario = nm, k = match(nm, canon),
              rep = seq_len(n_reps_of(nm)))
@@ -528,7 +412,7 @@ print(wide, digits = 3, row.names = FALSE)
 cat("\nExact McNemar comparisons:\n")
 print(mcn, digits = 3, row.names = FALSE)
 
-# reproduction of 02k ---------------------------------------------------------
+# reproduction check against CCW_REPRO_REF ---------------------------------
 if (REPRO) {
   if (BLOCK == 100 && N_NULL_DRAWS == 500 && N_SUBJ == 2000 &&
         nrow(fail_df) == 0 && file.exists(REPRO_REF)) {

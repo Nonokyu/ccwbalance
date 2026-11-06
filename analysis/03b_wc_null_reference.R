@@ -1,22 +1,10 @@
 # 03b_wc_null_reference.R ----------------------------------------------------
-# Conditional parametric null reference for the interval RRB / MaxIB
-# (rrb_null()) applied to the Webster-Clark SynPUF example (analysis/03).
-#
-# Data preparation (analysis/wc_data.R) and the base censoring model (age,
-# sex, renal) are identical to analysis/03_empirical_webster_clark.R; the
-# null reference covers the eleven history functions (five baseline
-# covariates, the three time-varying claims indicators and the three depth
-# functions fill_lag, fill_30, fill_cum, which enter no censoring model).
-# Two maxima per strategy x function: the raw MaxIB (max |RRB|, $maxib) and
-# the studentised maximum (max |RRB| / null SD of the cell, $maxib_stud),
-# each against the null 95th percentile of the same maximum.
-#
-# Outputs (git-ignored):
-#   output/empirical/wc_rrb_null_cells.csv, wc_rrb_null_maxib.csv,
-#   wc_rrb_null_maxib_stud.csv
-#
-# Run from the project root:  Rscript analysis/03b_wc_null_reference.R
-#   NULL_DRAWS (default 500)
+# Case study: conditional parametric null reference (rrb_null()) of the
+# interval RRB under the tutorial (base) censoring model; raw and studentised
+# maxima per strategy x history function (Table 5).
+# Inputs: the case-study data (analysis/wc_data.R; see analysis/README.md).
+# Outputs: output/empirical/wc_rrb_null_{cells,maxib,maxib_stud}.csv
+# Run: Rscript analysis/03b_wc_null_reference.R  (NULL_DRAWS, default 500)
 
 if (!file.exists("DESCRIPTION")) stop("Run this script from the project root.")
 suppressMessages(pkgload::load_all(".", quiet = TRUE))
@@ -30,7 +18,7 @@ save_csv <- function(x, name) {
 }
 t_start <- Sys.time()
 
-# 1. Webster-Clark data and base censoring model (as in analysis/03) ----------
+# 1. Webster-Clark data and base censoring model ------------------------------
 wc <- wc_prepare(delta = 10, horizon = 180)
 feats <- wc$feats
 w <- fit_censoring_model(wc$long, wc$formulas$base, stabilized = TRUE)

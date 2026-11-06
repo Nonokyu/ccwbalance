@@ -38,10 +38,7 @@ test_that("true_risk_ccw returns one risk per strategy", {
 })
 
 test_that("default DGM regression values (g2 = nested window)", {
-  # g1 and g3 paths predate the nested-g2 redesign. The g1 risk keeps its
-  # pre-redesign value 0.1158; the g3 path is unchanged but runs after g2 in
-  # one RNG stream (pre-redesign value 0.2168), so its Monte Carlo value
-  # moves because the new g2 regime consumes fewer random numbers.
+  # fixed-seed values of the default DGM; any change flags a DGM change
   d <- simulate_ccw(ccw_sim_params(n = 200), seed = 1)
   expect_equal(nrow(d), 4404)
   expect_equal(sum(d$X * d$L * d$time), 7334.85215549933, tolerance = 1e-8)

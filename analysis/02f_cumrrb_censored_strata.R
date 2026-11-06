@@ -1,41 +1,17 @@
 # 02f_cumrrb_censored_strata.R ------------------------------------------------
-# Cumulative RRB of the baseline functions (X, L_0) summarised over the strata
-# with artificial censoring (strategy x interval with at least one
-# artificially censored individual; g1, g2, g3), the same strata as interval
-# RRB.
-# 02_simulation_study.R took the cumulative-RRB maximum over every interval
-# from the first artificial censoring to the end of follow-up. Without loss to
-# follow-up the two maxima coincide, because the weights do not change after
-# the last artificial censoring; with unweighted loss to follow-up they differ.
-#
-# The script reproduces the replicate data of the run main exactly (same
-# L'Ecuyer-CMRG streams as 02_simulation_study.R; data simulation is the
-# first use of each stream), refits the censoring model
-# and recomputes both maxima for extra_ltfu (P3-03) and, as a check, the
-# first CCW_CHECK_REPS replicates of truncation_95 (P2-04) and of the run's
-# own correct scenario `correct` (the manuscript reports P1-01 from the run
-# largerep). It checks that the old maximum equals cumrrb_base_maxib in
-# output/sim/sim_results_main.csv. The column `scenario` of the outputs holds
-# the run-main scenario names.
-#
-# Strategies as in 02_simulation_study.R (g2 is the nested longer window
-# with artificial censoring only at t = w2 - 1). The saved
-# sim_results_main.csv predates the g2 redesign; the stored-value check
-# (stopifnot below) holds again only after the run main is redone.
-#
+# Table S3 supplement: cumulative RRB of X and L_0 maximised over the strata
+# with artificial censoring, for extra_ltfu (P3-03) and a check on P2-04 and
+# the run's correct scenario. Regenerates the replicates of run main with the
+# same RNG streams as 02_simulation_study.R and checks them against it.
 # Inputs:  output/sim/sim_results_main.csv
-# Outputs: output/sim/sim_paper_cumrrb_censored_strata.csv (per replicate),
-#          output/sim/sim_paper_cumrrb_censored_strata_summary.csv
-#
-# Run from the project root:  Rscript analysis/02f_cumrrb_censored_strata.R
-# (CCW_CORES sets the number of cores; CCW_CHECK_REPS the replicates of the
-# scenarios without loss to follow-up that are recomputed as a check)
+# Outputs: output/sim/sim_paper_cumrrb_censored_strata{,_summary}.csv
+# Run:     Rscript analysis/02f_cumrrb_censored_strata.R (CCW_CORES,
+#          CCW_CHECK_REPS: replicates recomputed as a check)
 
 pkgload::load_all(".", quiet = TRUE)
 source(file.path("analysis", "sim_scenarios.R"))
 
-# seed offset of the run main (equals SEED_OFFSET[["main"]] in
-# 02_simulation_study.R)
+# seed offset of run main in 02_simulation_study.R
 SEED_OFFSET_MAIN <- 3
 SEED <- 20260923
 N_MC <- 5e5

@@ -133,8 +133,7 @@ test_that("run largerep scenarios are well formed", {
   expect_equal(pf("omit_L_ss_trunc")$gamma[["g1"]], 1.5)
   expect_equal(deparse(f$omit_L_ss_trunc$formula), "~X")
   expect_lt(pf("early_events")$gamma[["g2"]], -1)
-  # runs main and manycov carry no n_rep (their replicate counts are
-  # unchanged)
+  # runs main and manycov carry no n_rep
   expect_true(all(is.na(scenario_table(ccw_scenarios("main"))$n_rep)))
   expect_true(all(is.na(scenario_table(ccw_scenarios("manycov"))$n_rep)))
 })
@@ -163,7 +162,7 @@ test_that("paper_scenarios() follows Table tab:grid of the manuscript", {
   ps <- paper_scenarios()
   ids <- c(sprintf("P1-%02d", 1:13), sprintf("P2-%02d", 1:6),
            sprintf("P3-%02d", 1:4))
-  # 23 scenarios in the row order of Table tab:grid; no E ids
+  # 23 scenarios in the row order of Table 2
   expect_equal(ps$id, ids)
   expect_false(anyDuplicated(ps$id) > 0)
   expect_false(any(grepl("^E-", ps$id)))
@@ -194,7 +193,7 @@ test_that("paper_scenarios() follows Table tab:grid of the manuscript", {
     sum(!is.na(scenario_table(ccw_scenarios(r))$id))
   }, 0))
   expect_equal(n_id, nrow(ps))
-  # specs of Table tab:grid: n, replicates, bootstrap resamples
+  # specs of Table 2: n, replicates, bootstrap resamples
   expect_equal(ps$n, c(rep(2000, 13), 300, 8000, 2000, 2000, 300, 2000,
                        rep(2000, 4)))
   expect_equal(ps$n_rep, c(1000, rep(200, 12), 1000, 500, rep(200, 8)))
@@ -213,7 +212,6 @@ test_that("paper_scenarios() follows Table tab:grid of the manuscript", {
   expect_equal(unique(p1$misspec), c("omit_L", "omit_Lsq", "omit_lag"))
   expect_equal(p1$cens_strength, rep(rep(c("weak", "strong"), each = 2), 3))
   expect_equal(p1$outcome_strength, rep(c("none", "strong"), 6))
-  # superseded rows of earlier runs
   expect_equal(ps$supersedes[ps$id %in% c("P1-01", "P2-01", "P2-02", "P3-04")],
                c("main:correct", "main:correct_n300", "main:correct_n8000",
                  "largerep:early_events"))

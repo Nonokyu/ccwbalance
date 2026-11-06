@@ -40,8 +40,8 @@
 #'   censoring);
 #' * `"unstabilized"`: interval scope `W_{t-1}` / `W_{t-1} / pi_t`; cumulative
 #'   scope 1 / `W_t` (unstabilised);
-#' * `"stabilized"`: interval scope `W_{t-1} q_t` / `W_{t-1} q_t / pi_t` (as in
-#'   the report's formula); cumulative scope 1 / `W_t^s` (carried event clones
+#' * `"stabilized"`: interval scope `W_{t-1} q_t` / `W_{t-1} q_t / pi_t`;
+#'   cumulative scope 1 / `W_t^s` (carried event clones
 #'   are extended with the cell numerators `q_k`, which requires the default
 #'   numerator of [fit_censoring_model()]; a warning is given otherwise);
 #' * `"weighted"`: columns `w_ref` / `w_post` as produced by
@@ -258,7 +258,7 @@ mahalanobis_rr <- function(data, features, method = "weighted", ridge = 0,
 #' censoring at `t`, weighted by `w_post`; with `weighted = FALSE` they are
 #' unweighted means over the at-risk rows. For post-baseline covariates
 #' affected by earlier treatment this is **descriptive only** and is not a
-#' zero-balance target (see the report).
+#' zero-balance target.
 #'
 #' @param data Long clone data.
 #' @param features Feature columns.

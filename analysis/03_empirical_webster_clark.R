@@ -1,69 +1,11 @@
 # 03_empirical_webster_clark.R -----------------------------------------------
-# Empirical example: Webster-Clark et al. (2025, Pharmacoepidemiol Drug Saf,
-# doi:10.1002/pds.70223) CCW tutorial on a cohort built from the CMS
-# Synthetic Medicare Public Use Files (SynPUF): treatment initiation after
-# myocardial infarction (MI) discharge, outcome within 180 days.
-#
-# DATA (public, no registration; ~200 KB):
-#   git clone https://github.com/mawcpharmdphd/CCW_tutorial data-raw/webster_clark
-#   -> data-raw/webster_clark/Data/baseccwcohort.sas7bdat   (git-ignored)
-# The repository also contains the authors' SAS and R code (R_code/), which
-# this script re-implements in the ccwbalance long-data contract.
-# Time-varying covariates come from the cohort's CMS DE-SynPUF claims:
-#   bash data-raw/get_synpuf_claims.sh -> data-raw/synpuf_claims/ (git-ignored)
-# Data preparation is shared with 03b, 03c, 03d and 02g (analysis/wc_data.R):
-#   visit (carrier claim), outpt (hospital outpatient claim) and fill (Part D
-#   dispensing other than the index antiplatelet) in the 10 days before each
-#   interval. Three history-depth functions of the same dispensings
-#   (fill_lag: fill in the previous window; fill_30: number in the 30 days
-#   before the interval; fill_cum: number since discharge) are monitored by
-#   the diagnostics but enter no censoring model.
-#
-# Variables used (one row per patient, n = 1590):
-#   ID, Discharge_date, birthdate, baseline_age, sex (SynPUF: 1 = male,
-#   2 = female), renal ("Y" = end-stage renal disease), race (1 white,
-#   2 black, 3 other, 5 Hispanic), RX_start (days from discharge to first
-#   treatment; NA = never), followup (days), outcome (1 = event at `followup`).
-#
-# Design (as in the tutorial, strategies over a 180-day horizon):
-#   "0_30"  initiate within days 0-30      "0_90"  initiate within days 0-90
-#   "no_0_90" no initiation during days 0-89 (intervals 0-8); initiation
-#             from day 90 onwards is allowed and not censored. (Earlier
-#             versions used "none" = never initiate over the 180 days.)
-#
-# DEVIATIONS from the tutorial (discrete-time re-implementation):
-#   * Time is discretised into DELTA-day intervals [k*DELTA, (k+1)*DELTA).
-#     Hence "0_30" = initiation on days 0-29 and "0_90" ends on day 89;
-#     patients starting exactly on day 30 or day 90 are handled differently
-#     from the tutorial (counts printed below).
-#   * The tutorial fits the grace-end censoring model among "recent starters"
-#     (last 7 days) and non-starters; here the model at the grace-end interval
-#     is fitted among all clones still uninitiated at the start of that
-#     interval (starters within the last DELTA days vs non-starters).
-#   * An outcome (or loss to follow-up) in the grace-end interval precedes the
-#     "not started by day 30/90" deviation (ccw_clone() default), as in the
-#     tutorial; the early-initiation deviation of "no_0_90" is applied at the
-#     start of the interval of initiation.
-#   * Loss to follow-up (followup < 180 without outcome) is treated as
-#     non-informative (as in the tutorial) and is not weighted.
-#   * Risks: weighted discrete-time Kaplan-Meier (estimate_risk()); the
-#     tutorial uses the baseline survival of a weighted null Cox model. A
-#     direct port of the tutorial's continuous-time "0_30"/"0_90" analyses is
-#     included below as a cross-check.
-#
-# Diagnostics: interval RRB, M^RR (interval), strategy and censoring balance
-# over the eleven history functions (five baseline covariates, three
-# time-varying claims indicators, three depth functions); cumulative RRB
-# over the baseline covariates. Censoring model as in the tutorial (age, sex,
-# renal); 03c adds race and/or the time-varying covariates.
-#
-# Outputs (output/empirical/, git-ignored) include wc_rrb.csv,
-# wc_timevarying.csv (id x time covariates and depth functions) and
-# wc_timevarying_assoc.csv (column `model`: "indicators" = initiation and
-# outcome models with visit, outpt, fill; "indicators + depth" = initiation
-# model with fill_lag, fill_30, fill_cum added).
-#
-# Run from the project root:  Rscript analysis/03_empirical_webster_clark.R
+# Case study: discrete-time re-implementation of the Webster-Clark et al.
+# (2025) CCW tutorial (strategies 0_30, 0_90, no_0_90; 180-day horizon) with
+# risk estimates, a cross-check against the tutorial's continuous-time
+# analysis, conventional and proposed diagnostics (Tables 5 and S7).
+# Inputs: the case-study data (analysis/wc_data.R; see analysis/README.md).
+# Outputs: output/empirical/wc_*.csv and figures in output/figures/.
+# Run: Rscript analysis/03_empirical_webster_clark.R  (WC_DELTA, WC_N_BOOT)
 
 if (!file.exists("DESCRIPTION")) stop("Run this script from the project root.")
 suppressMessages(pkgload::load_all(".", quiet = TRUE))
@@ -112,10 +54,9 @@ cat("Overall means:\n")
 print(round(colMeans(wc$tv[, c(tvf, depth)]), 3))
 
 # initiation and outcome associations of the time-varying covariates
-# (no_0_90 clones in the no-initiation phase, intervals 0-8)
+# (no_0_90 clones in the no-initiation phase)
 pp <- long[long$strategy == "no_0_90" & long$phase == "no_init", ]
-# model "indicators + depth": initiation model with the depth functions
-# added, to check whether they add to the prediction of initiation
+# "indicators + depth": initiation model with the depth functions added
 assoc_fit <- function(y, terms, label) {
   f <- stats::as.formula(paste(y, "~ age + female + renal + time +",
                                paste(terms, collapse = " + ")))
@@ -260,8 +201,8 @@ p_w <- ggplot(ret, aes(factor(time), w_post)) +
   theme_bw()
 save_fig(p_w, "wc_weight_distribution.png", 11, 6)
 
-# (2) end-of-grace SMD across strategies (weighted retained clones at the
-#     first interval after the 0-90 grace period), reference 0_30
+# (2) end-of-grace SMD across strategies at the first interval after the 0-90
+#     grace period, reference 0_30
 sb <- strategy_balance(w, feats, reference = "0_30")
 eog <- sb[sb$time == w90, ]
 cat("\nEnd-of-grace strategy SMD (interval", w90, ", reference 0_30):\n")
@@ -287,9 +228,6 @@ p_cb <- ggplot(cb, aes(time, abs(smd), colour = feature)) +
 save_fig(p_cb, "wc_censoring_balance.png", 11, 5)
 
 # 5. Proposed diagnostics -----------------------------------------------------
-# interval RRB over the eleven history functions (baseline covariates, the
-# three time-varying claims indicators and the three depth functions);
-# cumulative RRB over the baseline covariates only
 r_int <- rrb(w, feats, method = c("unweighted", "weighted"))
 r_cum <- rrb(w, covs, method = c("unweighted", "weighted"),
              scope = "cumulative")
@@ -299,7 +237,7 @@ save_fig(plot_love_dynamic(r_int), "wc_love_dynamic.png", 12, 6)
 save_fig(plot_love_dynamic(r_cum), "wc_love_cumulative.png", 12, 6)
 save_fig(plot_balance_heatmap(r_int[r_int$method == "weighted", ]),
          "wc_heatmap_rrb.png", 10, 9)
-# interval scope over all eleven history functions; cumulative scope over the
+# interval scope over all history functions; cumulative scope over the
 # baseline covariates only (0-targeted only for baseline-fixed features)
 mh <- rbind(
   mahalanobis_rr(w, feats, method = c("unweighted", "weighted"),

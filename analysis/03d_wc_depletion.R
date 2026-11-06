@@ -1,36 +1,11 @@
 # 03d_wc_depletion.R --------------------------------------------------------
-# Depletion term of the end-of-grace SMD in the Webster-Clark SynPUF example.
-#
-# PURPOSE: the end-of-grace between-strategy SMD of a baseline covariate
-#   compares the weighted individuals retained (and event-free) under two
-#   strategies; after outcome events it contains a depletion term
-#   (depletion equation of the manuscript), whereas cumulative RRB carries
-#   individuals with earlier events forward (weights rescaled by the
-#   stabilising numerators) and targets the baseline population. For the
-#   baseline covariates at day 30 and day 90 (interval starting on that day,
-#   `w30`/`w90` of 03_empirical_webster_clark.R) this script reports
-#     * the weighted and unweighted between-strategy SMD (strategy_balance()),
-#     * the cumulative RRB of each strategy (rrb(scope = "cumulative")),
-#     * the within-strategy depletion component
-#         dep_g = (mu_B,g - mu_cum,g) / s0
-#       (survivors' mean minus the cumulative-reconstruction mean, on the
-#       baseline-SD scale of cumulative RRB), so that mu_B,g - mu0 =
-#       s0 * (cum_rrb_g + dep_g), and the exact decomposition of the SMD
-#         SMD = s0 / s_ref * {(dep_g - dep_g') + (cum_rrb_g - cum_rrb_g')},
-#     * the cohort-level depletion (unweighted mean among individuals
-#       observed event-free at that day minus the baseline mean, / s0),
-#       with the crude incidence F and the mean among events mu_E.
-#   Data construction, censoring model and weights are identical to
-#   analysis/03_empirical_webster_clark.R (DELTA = 10, age + sex + renal).
-#
-# INPUTS:  data-raw/webster_clark/Data/baseccwcohort.sas7bdat (git-ignored;
-#          git clone https://github.com/mawcpharmdphd/CCW_tutorial
-#          data-raw/webster_clark) and data-raw/synpuf_claims/ (read by
-#          analysis/wc_data.R; the time-varying covariates are not used)
-# OUTPUTS: output/empirical/wc_depletion.csv (tidy: time, time_day,
-#          covariate, strategy, pair, weighted, quantity, value)
-#
-# Run from the project root:  Rscript analysis/03d_wc_depletion.R
+# Case study: depletion term of the end-of-grace between-strategy SMD of the
+# baseline covariates at days 30 and 90, with the exact decomposition
+#   SMD = s0 / s_ref * {(dep_g - dep_g') + (cum_rrb_g - cum_rrb_g')},
+# dep_g = (survivor mean - cumulative-reconstruction mean) / s0.
+# Inputs: the case-study data (analysis/wc_data.R) and the outputs of 03.
+# Outputs: output/empirical/wc_depletion.csv
+# Run: Rscript analysis/03d_wc_depletion.R  (after 03)
 
 if (!file.exists("DESCRIPTION")) stop("Run this script from the project root.")
 t_start <- Sys.time()
@@ -40,7 +15,7 @@ source(file.path("analysis", "wc_data.R"))
 out_dir <- file.path("output", "empirical")
 dir.create(out_dir, recursive = TRUE, showWarnings = FALSE)
 
-# 1. Cohort, long data and weights (analysis/wc_data.R, as in analysis/03) ---
+# 1. Cohort, long data and weights (as in analysis/03) ------------------------
 wc <- wc_prepare(delta = 10, horizon = 180)
 DELTA <- wc$delta
 K <- wc$K

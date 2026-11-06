@@ -1,11 +1,8 @@
 #!/usr/bin/env bash
-# Download the CMS 2008-2010 DE-SynPUF claim files (all 20 samples) and keep
-# only the claims of the 1,590 beneficiaries of the Webster-Clark CCW tutorial
-# cohort (data-raw/webster_clark/Data/baseccwcohort.sas7bdat; the cohort IDs
-# are DESYNPUF_IDs spread over the 20 samples). The filtered claims are
-# written to data-raw/synpuf_claims/*.csv (git-ignored; about 7.4 GB are
-# downloaded and discarded). Run from the project root:
-#   bash data-raw/get_synpuf_claims.sh
+# Download the CMS 2008-2010 DE-SynPUF claims (20 samples, about 7.4 GB,
+# discarded after filtering) and keep the claims of the Webster-Clark cohort
+# in data-raw/synpuf_claims/*.csv. Needs data-raw/webster_clark/.
+# Run from the repository root: bash data-raw/get_synpuf_claims.sh
 set -eu
 ROOT=$(cd "$(dirname "$0")/.." && pwd)
 OUT="$ROOT/data-raw/synpuf_claims"

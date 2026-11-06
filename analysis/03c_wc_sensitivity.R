@@ -1,48 +1,12 @@
 # 03c_wc_sensitivity.R --------------------------------------------------------
-# Webster-Clark SynPUF example (analysis/03): uncertainty of the RRB profile
-# and a sensitivity analysis over the censoring-model specification.
-#
-# Data preparation (analysis/wc_data.R) and the base censoring model are
-# identical to analysis/03_empirical_webster_clark.R and 03b. Features: the
-# eleven history functions (five baseline covariates, the three time-varying
-# claims indicators visit, outpt, fill, and the three depth functions
-# fill_lag, fill_30, fill_cum, which enter no censoring model) for interval
-# RRB and the null reference; the five baseline covariates for cumulative
-# RRB.
-#
-# 1. Base model (age, sex, renal; time terms in the no-initiation phase):
-#    individual bootstrap of the weighted RRB (rrb_boot(), B = WC_RRB_BOOT,
-#    censoring model refitted per resample), cumulative and interval scope.
-# 2. Sensitivity models, each adding terms to both phase formulas:
-#      race  + race_black + race_other
-#      use   + visit + outpt + fill
-#      full  + race_black + race_other + visit + outpt + fill
-#    Interval and cumulative RRB (unweighted, weighted), weight support, the
-#    conditional parametric null reference (rrb_null(), NULL_DRAWS draws,
-#    seed 20260925) and the 180-day risks / risk difference 0_90 vs 0_30
-#    with the individual bootstrap SE of analysis/03 (same resamples, seed
-#    20260923; the time-varying covariates of each resampled individual are
-#    carried along, wc_boot_long()).
-# 3. Comparison table base / race / use / full (printed and saved): per
-#    history function the weighted interval RRB at day 30 (0_30, time 2)
-#    and day 90 (0_90, time 8) and the MaxIB over all strategies with its
-#    null 95th percentile and p; the overall MaxIB; cumulative RRB of
-#    race_other at the grace ends; ESS/|R|, w99, risks and risk difference;
-#    appended last (rows "Studentised max ..."), the studentised maximum
-#    max |RRB| / null SD over all strategies per function and overall, with
-#    its null 95th percentile and p (rrb_null()$maxib_stud).
-#
-# Outputs (git-ignored, output/empirical/):
-#   wc_rrb_boot_cumulative.csv, wc_rrb_boot_interval.csv   (base model)
-#   wc_<model>_rrb.csv, wc_<model>_weight_support.csv,
-#   wc_<model>_null_maxib.csv, wc_<model>_null_maxib_stud.csv,
-#   wc_<model>_null_cells.csv,
-#   wc_<model>_estimates.csv   for <model> = race, use, full
-#   (base model: wc_rrb_null_*.csv of analysis/03b)
+# Case study: individual bootstrap of the RRB under the tutorial (base) model,
+# and RRB, weight support, null reference and risk difference under the
+# censoring models race, use and full; comparison table (Tables 5 and S7).
+# Inputs: the case-study data (analysis/wc_data.R; see analysis/README.md).
+# Outputs: output/empirical/wc_rrb_boot_*.csv, wc_<model>_*.csv,
 #   wc_model_comparison.csv
-#
-# Run from the project root:  Rscript analysis/03c_wc_sensitivity.R
-#   WC_RRB_BOOT (default 200), WC_N_BOOT (default 200), NULL_DRAWS (500)
+# Run: Rscript analysis/03c_wc_sensitivity.R
+#   (WC_RRB_BOOT, WC_N_BOOT, NULL_DRAWS)
 
 if (!file.exists("DESCRIPTION")) stop("Run this script from the project root.")
 suppressMessages(pkgload::load_all(".", quiet = TRUE))
@@ -59,7 +23,7 @@ save_csv <- function(x, name) {
 secs <- function(t0) as.numeric(difftime(Sys.time(), t0, units = "secs"))
 t_start <- Sys.time()
 
-# 1. Data and base censoring model (as in analysis/03) -------------------------
+# 1. Data and base censoring model --------------------------------------------
 wc <- wc_prepare(delta = 10, horizon = 180)
 long <- wc$long
 covs <- wc$covs
@@ -85,8 +49,8 @@ rd <- function(e) {
                        as.character(e$strategy[e$time == max(e$time)]))
   c(rd_0_90_vs_0_30 = r[["0_90"]] - r[["0_30"]])
 }
-# 180-day risks and risk difference with the individual bootstrap of
-# analysis/03 (same seed, hence the same resamples for every model)
+# 180-day risks and risk difference; the seed of analysis/03 gives the same
+# resamples for every model
 estimates <- function(wf, fml) {
   est <- estimate_risk(wf)
   risk_h <- est[est$time == K - 1, c("strategy", "risk")]
@@ -134,7 +98,7 @@ run_model <- function(m, save = TRUE) {
   list(r = r, ws = ws, nr = nr, est = est)
 }
 model_names <- c("base", "race", "use", "full")
-# base model: outputs already written by analysis/03 and 03b (identical)
+# base model: outputs already written by analysis/03 and 03b
 res <- lapply(stats::setNames(model_names, model_names), function(m) {
   run_model(m, save = m != "base")
 })

@@ -1,42 +1,11 @@
 # 02d_size_adjusted_detection.R ------------------------------------------------
-# Size-adjusted comparison of the detection rates of interval RRB and
-# censoring balance (CB) in the misspecification factorial (Part 1,
-# P1-02 to P1-13 of paper_scenarios()).
-# The two null references have different empirical false-positive rates under
-# the correctly specified model (RRB about 0.023, CB about 0.050 at n = 2000,
-# P1-01), so their nominal-5% detection rates are not
-# comparable. Here the per-replicate threshold c * q95 (q95 = the replicate's
-# own null 95th percentile) is calibrated so that the empirical false-positive
-# rate under correct specification (P1-01, n = 2000, 1,000
-# replicates) equals 0.05 for each statistic, and the same multiplier is
-# applied to the Part 1 scenarios (n = 2000, 200 replicates).
-# The comparison is made for the pooled statistics (strategy "all": maximum
-# over all strategies, columns null_maxib_obs, null_q95, ...) and separately
-# for each strategy g in g1, g2, g3 (columns null_maxib_obs_<g>,
-# null_q95_<g>, ...). Each strategy has its own multipliers c, calibrated
-# from that strategy's P1-01 ratios obs_<g> / q95_<g>.
-# The same calibration is made for the studentised maximum of interval RRB
-# (null_z_max[_<g>] against c * null_z_q95[_<g>]) and for the studentised
-# maximum of CB restricted to the censorable rows (null_cb_cens_z_max[_<g>]
-# against c * null_cb_cens_z_q95[_<g>]), the exceedance standard of the
-# manuscript; these columns (prefixes stud_ and cb_cens_stud_) are appended
-# after the raw MaxIB columns and are NA when the results lack them.
-#
-# Inputs:  <sim_dir>/sim_results_<run>.csv of the runs that supply P1-01 to
-#          P1-13 (analysis/sim_paper_results.R)
-# Outputs: <sim_dir>/sim_part1_detection_size_adjusted.csv
-#            one row per strategy ("all", g1, g2, g3) x scenario id;
-#            column strategy follows id; rows ordered by strategy, then id;
-#            raw MaxIB: nominal_rrb, nominal_cb, adj_rrb(_se), adj_cb(_se),
-#            diff_rrb_minus_cb, diff_se; then studentised: nominal_stud_rrb,
-#            nominal_cb_cens_stud, stud_adj_rrb(_se), cb_cens_stud_adj
-#            (_se), stud_diff_rrb_minus_cb_cens, stud_diff_se
-#          <sim_dir>/sim_part1_detection_size_multipliers.csv
-#            one row: c_rrb, c_cb (pooled), then c_rrb_<g>, c_cb_<g>; then
-#            c_stud_rrb, c_cb_cens_stud (pooled) and c_stud_rrb_<g>,
-#            c_cb_cens_stud_<g>
-# CCW_SIM_DIR (default "output/sim") sets sim_dir.
-# Run from the project root:  Rscript analysis/02d_size_adjusted_detection.R
+# Table S4: size-adjusted detection rates of interval RRB and censoring
+# balance in Part 1 (P1-02 to P1-13). The threshold c * q95 is calibrated so
+# that the false-positive rate under the correct model (P1-01) is 0.05, pooled
+# and per strategy, for the raw and the studentised maxima.
+# Inputs:  output/sim/sim_results_<run>.csv (analysis/sim_paper_results.R)
+# Outputs: output/sim/sim_part1_detection_size_{adjusted,multipliers}.csv
+# Run:     Rscript analysis/02d_size_adjusted_detection.R (CCW_SIM_DIR)
 
 if (!file.exists("DESCRIPTION")) stop("Run this script from the project root.")
 suppressMessages(pkgload::load_all(".", quiet = TRUE))
@@ -51,8 +20,7 @@ p1_ids <- scen$id[scen$part == 1]
 d <- read_paper_results(p1_ids, sim_dir = sim_dir)
 strategies <- c("all", "g1", "g2", "g3")
 
-# column names of the null-reference statistics for one strategy ("all" =
-# the pooled columns without suffix)
+# null-reference columns of one strategy ("all" = pooled, no suffix)
 null_cols <- function(g) {
   sfx <- if (g == "all") "" else paste0("_", g)
   stats::setNames(
@@ -71,7 +39,7 @@ stud_cols <- function(g) {
     c("obs", "q95", "exceed", "cb_obs", "cb_q95", "cb_exceed")
   )
 }
-# a column, or NA when it is absent (results before 8a2bd6a)
+# a column, or NA when it is absent
 col_get <- function(x, nm) if (nm %in% names(x)) x[[nm]] else
   rep(NA_real_, nrow(x))
 q95_na <- function(v) {
@@ -81,8 +49,7 @@ q95_na <- function(v) {
 mean_na <- function(v) if (all(is.na(v))) NA_real_ else mean(v, na.rm = TRUE)
 
 cal <- d[d$id == "P1-01", ]
-# multiplier c such that mean(obs > c * q95) = 0.05: the 95th percentile of
-# the ratio obs / q95 under the correct model
+# multiplier c: 95th percentile of obs / q95 under the correct model
 multipliers <- lapply(strategies, function(g) {
   cl <- null_cols(g)
   ratio_rrb <- cal[[cl[["obs"]]]] / cal[[cl[["q95"]]]]
@@ -98,9 +65,7 @@ multipliers_stud <- lapply(strategies, function(g) {
 })
 names(multipliers_stud) <- strategies
 
-# NA-tolerant version for the studentised columns: replicates with NA are
-# dropped (separately per statistic; the paired difference uses the
-# replicates where both are available)
+# NA-tolerant version: replicates with NA are dropped per statistic
 rate_na <- function(x, c, obs, q95) {
   v <- as.numeric(col_get(x, obs) > c * col_get(x, q95))
   n <- sum(!is.na(v))

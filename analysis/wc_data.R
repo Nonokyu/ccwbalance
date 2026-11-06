@@ -1,56 +1,14 @@
 # wc_data.R --------------------------------------------------------------------
-# Shared data preparation for the Webster-Clark SynPUF case study
-# (analysis/03_empirical_webster_clark.R, 03b, 03c, 03d and part 2 of
-# 02g_null_coupling_check.R). Source after pkgload::load_all(".").
-#
-# INPUTS (git-ignored):
+# Shared data preparation for the Webster-Clark SynPUF case study, sourced by
+# 03, 03b, 03c, 03d and part 2 of 02g after pkgload::load_all(".").
+# Inputs (git-ignored; see analysis/README.md):
 #   data-raw/webster_clark/Data/baseccwcohort.sas7bdat
-#     git clone https://github.com/mawcpharmdphd/CCW_tutorial
-#       data-raw/webster_clark
 #   data-raw/synpuf_claims/{carrier,outpatient,pde}.csv
-#     bash data-raw/get_synpuf_claims.sh   (CMS DE-SynPUF claims of the
-#     1,590 cohort members; first column DESYNPUF_ID = cohort ID)
-#
-# wc_prepare(delta = 10, horizon = 180) returns a list with
-#   raw         the tutorial cohort (haven::read_sas)
-#   cohort      one row per individual: id, ID, age, female, renal,
-#               race_black, race_other, rx, fu, outcome, init_time,
-#               event_time, ltfu_time (intervals of `delta` days)
-#   long        ccw_clone() long data with the time-varying covariates and
-#               the depth functions merged by (id, time); row order
-#               strategy, id, time
-#   covs        the five baseline covariates
-#   tvf         the three time-varying covariates c("visit", "outpt",
-#               "fill"); for interval k the window is the `delta` days
-#               before the start of the interval (days delta*k - delta to
-#               delta*k - 1 after discharge; for k = 0 the last days of the
-#               index admission):
-#                 visit  >= 1 carrier (physician/supplier) claim
-#                        (CLM_FROM_DT) in the window
-#                 outpt  >= 1 hospital outpatient claim (CLM_FROM_DT)
-#                 fill   >= 1 Part D dispensing (SRVC_DT), excluding the
-#                        NDCs the patient filled on the initiation date
-#                        RX_date (the index antiplatelet)
-#   depth       three history-depth functions of the same non-index Part D
-#               dispensings, monitored by the diagnostics but never entered
-#               into a censoring model, c("fill_lag", "fill_30",
-#               "fill_cum"):
-#                 fill_lag  `fill` of the window of interval k - 1 (0 for
-#                           k = 0)
-#                 fill_30   number of dispensings in the 30 days before the
-#                           interval (days delta*k - 30 to delta*k - 1; for
-#                           small k partly in the index admission)
-#                 fill_cum  number of dispensings from discharge (day 0) to
-#                           day delta*k - 1 (0 for k = 0)
-#   feats       c(covs, tvf, depth), the eleven monitored history functions
-#   strategies  0_30, 0_90, no_0_90
-#   K, w30, w90, delta, horizon
-#   tv          id x time table of the time-varying covariates and the
-#               depth functions (with ID)
-#   formulas    censoring-model formula lists base, race, use, full (terms
-#               from covs and tvf only; the depth functions enter none)
-#
-# wc_boot_long(wc, s) builds the long data of a bootstrap resample.
+# wc_prepare() returns the cohort, the long data (ccw_clone() with the
+# time-varying covariates visit, outpt, fill and the monitored depth functions
+# fill_lag, fill_30, fill_cum), the feature sets and the censoring-model
+# formulas base, race, use, full. wc_boot_long() builds the long data of a
+# bootstrap resample.
 
 wc_prepare <- function(delta = 10, horizon = 180) {
   data_file <- file.path("data-raw", "webster_clark", "Data",
@@ -191,11 +149,8 @@ wc_prepare <- function(delta = 10, horizon = 180) {
        tv = tv, formulas = formulas)
 }
 
-# wc_boot_long(wc, s): long data of an individual bootstrap resample `s`
-# (original ids, with replacement), built as in analysis/03 (cohort rows
-# resampled, new ids 1..n, ccw_clone()) with the time-varying covariates of
-# the original individuals (and the depth functions) attached by (original
-# id, time).
+# Long data of bootstrap resample `s` (original ids, with replacement): new ids
+# 1..n, with the time-varying covariates of the original individuals attached.
 wc_boot_long <- function(wc, s) {
   cb <- wc$cohort[s, ]
   cb$orig_id <- cb$id

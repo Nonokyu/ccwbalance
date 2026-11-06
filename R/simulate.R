@@ -184,7 +184,7 @@ ccw_sim_params <- function(...) {
   })
 }
 
-#' Simulate cloned CCW data under the report's DGM
+#' Simulate cloned CCW data under the simulation DGM
 #'
 #' Simulates observational data from the DGM documented in
 #' [ccw_sim_params()], clones every individual into the three strategies and

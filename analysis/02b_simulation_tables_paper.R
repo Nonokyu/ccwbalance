@@ -1,127 +1,13 @@
 # 02b_simulation_tables_paper.R -----------------------------------------------
-# Tables and figures of the simulation study of the manuscript (Parts 1-3
-# and the Supporting Information). One row per scenario id of paper_scenarios()
-# (analysis/sim_scenarios.R; P1-01 to P3-04 in the row order of Table
-# tab:grid), each taken from the run that supplies it (main, manycov,
-# largerep, variants; analysis/sim_paper_results.R): cell means with Monte
-# Carlo (MC) SEs, detection / false-positive rates against the conditional
-# parametric null reference (rrb_null()) of interval RRB and of censoring
-# balance (CB), and within-scenario Spearman correlations (secondary). No
-# pooled Spearman / AUROC.
-#
-# Strategies: g1 initiates in intervals 0-2, g2 in intervals 0-8 (nested
-# longer window), g3 does not initiate through interval 8. Two contrasts
-# (suffix <cc>): g2g1, theta = risk(g2) - risk(g1); g3g2, theta = risk(g3) -
-# risk(g2). The pooled diagnostics are aggregated over g1, g2 and g3;
-# end-of-grace SMDs are per contrast (g2g1 at interval 3, g3g2 at interval
-# 9). The censoring model is fitted separately per strategy (g1 and g2: one
-# censoring interval each; g3: pooled logistic model over intervals 0-8), so
-# the per-strategy summaries (suffix _<g>, g = g1, g2, g3) judge each
-# strategy against the null reference of its own model.
-#
-# Inputs:  <sim_dir>/sim_results_<run>.csv of the runs main, manycov,
-#          largerep and variants
-# Outputs: analysis/scenarios_paper.csv        paper_scenarios(): id, label,
-#                                              run and spec (default
-#                                              sim_dir only)
-#          <sim_dir>/sim_paper_scenarios.csv   one row per id: performance
-#                                              per contrast (theta_true_<cc>,
-#                                              bias_<cc>, mc_se_bias_<cc>,
-#                                              mc_sd_<cc>,
-#                                              abs_bias_over_mc_sd_<cc>,
-#                                              rmse_<cc>, coverage_<cc>,
-#                                              mcse_coverage_<cc>,
-#                                              se_ratio_<cc>), diagnostic
-#                                              means and MC SEs,
-#                                              null-reference exceedance
-#                                              (RRB overall and per history
-#                                              function, CB), bootstrap-
-#                                              interval exclusion rates of
-#                                              cumulative RRB of X (g1, g2,
-#                                              g3 x eog1, eog2, h);
-#                                              per strategy g:
-#                                              rrb_all_maxib_<g>_mean/_mcse,
-#                                              exceed_rate_<g>(_se),
-#                                              null_maxib_obs_<g>_mean
-#                                              (model weights),
-#                                              null_q95_<g>_mean, mc_q95_<g>
-#                                              (95th pct over replicates of
-#                                              null_maxib_obs_<g>),
-#                                              jackson_cb_max_<g>_mean/_mcse,
-#                                              null_cb_exceed_rate_<g>,
-#                                              exceed_rate_<f>_<g>;
-#                                              appended after these, pooled
-#                                              (no suffix) and per strategy
-#                                              (suffix _<g>): studentised
-#                                              maximum (the exceedance
-#                                              standard) stud_exceed_rate(_se),
-#                                              stud_exceed_rate_<f>,
-#                                              null_z_max_<g>_mean/_mcse,
-#                                              null_z_q95_mean, mc_z_q95 (95th
-#                                              pct over replicates of
-#                                              null_z_max),
-#                                              null_z_n_excluded_mean;
-#                                              CB on the censorable rows:
-#                                              jackson_cb_cens_max_mean/_mcse,
-#                                              null_cb_cens_exceed_rate(_se),
-#                                              null_cb_cens_maxib_obs_mean,
-#                                              null_cb_cens_q95_mean,
-#                                              null_cb_cens_stud_exceed_rate
-#                                              (_se), null_cb_cens_z_max_mean,
-#                                              null_cb_cens_z_q95_mean,
-#                                              null_cb_cens_mc_z_q95,
-#                                              null_cb_cens_exceed_rate_<f>
-#                                              (raw only; no studentised CB
-#                                              per feature)
-#          <sim_dir>/sim_paper_calibration.csv  id x strategy ("all" =
-#                                              pooled over g1-g3, or g1, g2,
-#                                              g3) x diagnostic (RRB, CB) x
-#                                              history function: exceedance
-#                                              rate of the null q95, exact
-#                                              95% CI (filter strategy ==
-#                                              "all" for the pooled rows);
-#                                              column statistic: "raw" (MaxIB,
-#                                              rows of RRB and CB first),
-#                                              "studentised" (RRB overall and
-#                                              per function; CB_cens overall),
-#                                              then "raw" rows of CB_cens (CB
-#                                              on the censorable rows)
-#          <sim_dir>/sim_paper_within_spearman.csv  diagnostic x contrast:
-#                                              diagnostic vs |bias_<cc>|
-#                                              within scenario, Fisher-z SE
-#          <sim_dir>/sim_part1_factorial.csv   Part 1 2 x 2 cell means and
-#                                              interaction contrasts
-#                                              (quantities bias_g2g1,
-#                                              bias_g3g2, the primary
-#                                              diagnostics and
-#                                              rrb_all_maxib_<g>,
-#                                              jackson_cb_max_<g>,
-#                                              jackson_cb_cens_max_<g>,
-#                                              null_z_max_<g>)
-#          <sim_dir>/sim_part1_detection_rrb_vs_cb.csv  Part 1: exceedance
-#                                              of the null q95 by interval-RRB
-#                                              MaxIB vs CB MaxIB, paired
-#                                              difference and SEs
-#          <fig_dir>/sim_part1_factorial.png   Part 1 factorial plot
-#                                              (omitted term x {bias of
-#                                              g3 - g2, interval-RRB MaxIB
-#                                              of g1, g2, g3})
-#          <fig_dir>/sim_part2_calibration.png  Part 2 null-reference
-#                                              calibration (base mechanism)
-#                                              per strategy g1, g2, g3,
-#                                              overall and per history
-#                                              function: exceedance of the
-#                                              studentised maximum
-#          <fig_dir>/sim_part2_calibration_raw.png  the same for the raw
-#                                              interval-RRB MaxIB (Web
-#                                              Appendix)
-#
-# Environment: CCW_SIM_DIR (default "output/sim") is the directory of the
-# results (sim_dir) and of the CSV outputs. Figures go to output/figures
-# (fig_dir) for the default and to <CCW_SIM_DIR>/figures otherwise;
-# analysis/scenarios_paper.csv is written only for the default.
-#
-# Run from the project root:  Rscript analysis/02b_simulation_tables_paper.R
+# Tables 2-4, Tables S2, S3, S5, S6 and Figures 2-3 of the simulation study:
+# one row per scenario id of paper_scenarios() (P1-01 to P3-04).
+# Inputs:  output/sim/sim_results_<run>.csv (runs main, manycov, largerep,
+#          variants; read with analysis/sim_paper_results.R)
+# Outputs: analysis/scenarios_paper.csv, output/sim/sim_paper_*.csv,
+#          output/sim/sim_part1_*.csv, output/figures/sim_part*.png
+#          (columns: see analysis/README.md)
+# Run:     Rscript analysis/02b_simulation_tables_paper.R
+#          (CCW_SIM_DIR, default "output/sim", sets the results directory)
 
 if (!file.exists("DESCRIPTION")) stop("Run this script from the project root.")
 suppressMessages(pkgload::load_all(".", quiet = TRUE))
@@ -147,13 +33,11 @@ scen_csv <- file.path("analysis", "scenarios_paper.csv")
 if (is_default_dir) write.csv(scen, scen_csv, row.names = FALSE)
 res <- read_paper_results(sim_dir = sim_dir)
 
-# contrasts: g2g1 = risk(g2) - risk(g1), g3g2 = risk(g3) - risk(g2)
 contrasts <- c("g2g1", "g3g2")
 primary <- c("rrb_all_maxib", "ks_max", "mhb_max", "jackson_cb_max",
              "cumrrb_base_maxib", "eog_smd_base_max_g2g1",
              "eog_smd_base_max_g3g2")
 strategies <- c("g1", "g2", "g3")
-# history functions: null_exceed_<f> without the per-strategy suffix _<g>
 feats <- grep("^null_exceed_", names(res), value = TRUE)
 feats <- sub("^null_exceed_", "",
              grep("_g[1-3]$", feats, value = TRUE, invert = TRUE))
@@ -200,8 +84,7 @@ cum_cells <- as.vector(outer(c("g1", "g2", "g3"), c("eog1", "eog2", "h"),
                              paste, sep = "_"))
 key_cols <- c("id", "part", "label", "run", "scenario")
 
-# ---------------------------------------------------------------------------
-# 1. per-scenario summary
+# 1. per-scenario summary ---------------------------------------------------
 summ <- do.call(rbind, lapply(scen$id, function(s) {
   x <- res[res$id == s, ]
   n_rep <- nrow(x)
@@ -307,9 +190,7 @@ summ <- do.call(rbind, lapply(scen$id, function(s) {
         col_mean(x, sprintf("null_exceed_%s_%s", f, g))
     }
   }
-  # studentised maximum (the exceedance standard) and censoring balance
-  # restricted to the censorable rows; appended after the columns above,
-  # pooled (no suffix) and per strategy (suffix _<g>)
+  # studentised maximum and censoring balance on the censorable rows
   for (g in c("all", strategies)) {
     sfx <- if (g == "all") "" else paste0("_", g)
     nm <- function(stem, end = "") paste0(stem, sfx, end)
@@ -322,7 +203,6 @@ summ <- do.call(rbind, lapply(scen$id, function(s) {
     }
     zmax <- col_get(x, nm("null_z_max"))
     if (g != "all") {
-      # null_z_max_mean (pooled) is already written above
       out[[nm("null_z_max", "_mean")]] <- mean_na(zmax)
       out[[nm("null_z_max", "_mcse")]] <- mcse(zmax)
     }
@@ -348,7 +228,6 @@ summ <- do.call(rbind, lapply(scen$id, function(s) {
     out[[nm("null_cb_cens_z_q95", "_mean")]] <-
       col_mean(x, nm("null_cb_cens_z_q95"))
     out[[nm("null_cb_cens_mc_z_q95")]] <- q95_na(czmax)
-    # per feature only the raw censorable-CB exceedance exists
     for (f in feats) {
       out[[paste0("null_cb_cens_exceed_rate_", f, sfx)]] <-
         col_mean(x, paste0("null_cb_cens_exceed_", f, sfx))
@@ -368,17 +247,8 @@ summ$ltfu_cb_max_mean[no_ltfu] <- NA
 summ$ltfu_rrb_max_mean[no_ltfu] <- NA
 write.csv(summ, out_csv("paper_scenarios"), row.names = FALSE)
 
-# ---------------------------------------------------------------------------
-# 2. calibration / detection: exceedance rate of the null-reference q95 for
-#    interval-RRB MaxIB and CB MaxIB, overall and per history function, with
-#    exact binomial 95% CI; pooled over g1-g3 (strategy "all") and per
-#    strategy (columns with suffix _<g>)
-#    Column statistic: "raw" = MaxIB on the SMD scale (the rows of the
-#    earlier versions, first), "studentised" = studentised maximum (the
-#    exceedance standard; RRB overall and per history function, diagnostic
-#    CB_cens = CB on the censorable rows, overall only). The raw
-#    censorable-CB rows (diagnostic CB_cens, statistic raw) follow the
-#    studentised rows.
+# 2. calibration: exceedance rate of the null q95 with exact 95% CI, pooled
+#    (strategy "all") and per strategy; statistic "raw" or "studentised"
 cal_cols_raw <- do.call(rbind, lapply(c("all", strategies), function(g) {
   sfx <- if (g == "all") "" else paste0("_", g)
   rbind(
@@ -434,9 +304,7 @@ cal <- rbind(cal_table(cal_cols_raw), cal_table(cal_cols_stud),
              cal_table(cal_cols_cbc))
 write.csv(cal, out_csv("paper_calibration"), row.names = FALSE)
 
-# 2b. Part 1 detection: interval-RRB MaxIB vs censoring-balance MaxIB, each
-#     against its own conditional null q95 (same null draws). Paired by
-#     replicate: SE of the mean of d_i = exceed_RRB_i - exceed_CB_i.
+# 2b. Part 1 detection, RRB vs CB; paired SE of exceed_RRB - exceed_CB
 bin_se <- function(v) {
   v <- v[!is.na(v)]
   if (length(v) == 0) NA_real_ else sqrt(mean(v) * (1 - mean(v)) / length(v))
@@ -462,9 +330,7 @@ det <- merge(scen[, c(key_cols, "misspec", "cens_strength",
 det <- det[match(p1_ids, det$id), ]
 write.csv(det, out_csv("part1_detection_rrb_vs_cb"), row.names = FALSE)
 
-# ---------------------------------------------------------------------------
-# 3. within-scenario Spearman (secondary): diagnostic x contrast, against
-#    |bias_<cc>|
+# 3. within-scenario Spearman: diagnostic vs |bias_<cc>| ------------------
 spear <- function(x, y) {
   ok <- !is.na(x) & !is.na(y)
   if (sum(ok) < 3) return(NA_real_)
@@ -494,10 +360,8 @@ wsp <- cbind(scen[match(wsp$id, scen$id), key_cols], wsp[, -1],
              row.names = NULL)
 write.csv(wsp, out_csv("paper_within_spearman"), row.names = FALSE)
 
-# ---------------------------------------------------------------------------
 # 4. Part 1 factorial: 2 x 2 cell means and interaction contrasts
-#    interaction = (strong cens, strong outcome) - (strong, none)
-#                  - (weak, strong) + (weak, none)
+#    (strong, strong) - (strong, none) - (weak, strong) + (weak, none)
 s1 <- summ[summ$part == 1 & summ$misspec != "none", ]
 bias_q <- paste0("bias_", contrasts)
 quant <- c(bias_q, primary, paste0("rrb_all_maxib_", strategies),
@@ -546,15 +410,10 @@ fact <- do.call(rbind, lapply(unique(s1$misspec), function(ms) {
 }))
 write.csv(fact, out_csv("part1_factorial"), row.names = FALSE)
 
-# ---------------------------------------------------------------------------
-# 5. figures
+# 5. figures ---------------------------------------------------------------
 misspec_lab <- c(omit_L = "'Omitted '*L[k]",
                  omit_Lsq = "'Omitted '*L[k]^2",
                  omit_lag = "'Omitted '*L[k-1]")
-# the figure shows the bias of g3 - g2 (where the bias concentrates) and
-# interval RRB per strategy (each strategy has its own censoring model); the
-# bias of g2 - g1, pooled RRB, censoring balance, KS^RR and M^RR are kept in
-# the CSV outputs (Table 2 / web appendix) but not plotted
 fq <- c("bias_g3g2", paste0("rrb_all_maxib_", strategies))
 fl <- do.call(rbind, lapply(fq, function(q) {
   cm <- vapply(seq_len(nrow(s1)), function(k) cell_mean(q, s1[k, ]),
@@ -572,8 +431,6 @@ ref <- data.frame(
   quantity = factor(labels_math[fq], levels = labels_math[fq]),
   value = vapply(fq, function(q) cell_mean(q, ref_correct)[1], 0)
 )
-# outcome effect encoded by symbol, line type and grey level (readable in
-# monochrome and for colour-vision deficiency); the reference is dotted
 outcome_lab <- "Outcome strength"
 p_fact <- ggplot(fl, aes(cens, mean, colour = outcome, shape = outcome,
                          linetype = outcome, group = outcome)) +
@@ -583,8 +440,7 @@ p_fact <- ggplot(fl, aes(cens, mean, colour = outcome, shape = outcome,
   geom_pointrange(aes(ymin = mean - 1.96 * mcse, ymax = mean + 1.96 * mcse),
                   position = position_dodge(width = 0.2), size = 0.45,
                   linetype = "solid", fill = "white") +
-  # free scales: the bias column is an order of magnitude below RRB, and
-  # the interaction (bias only with both factors strong) must stay visible
+  # free scales: bias is an order of magnitude below RRB
   facet_grid(misspec ~ quantity, scales = "free",
              labeller = label_parsed) +
   scale_colour_manual(values = c(none = "grey45", strong = "black"),
@@ -600,24 +456,17 @@ p_fact <- ggplot(fl, aes(cens, mean, colour = outcome, shape = outcome,
 ggsave(out_png("part1_factorial"), p_fact, width = 9.5, height = 7,
        dpi = 150)
 
-# Part 2 calibration (base mechanism): exceedance rate of the null-reference
-# q95 of interval RRB per strategy (each against the null reference of its
-# own censoring model), overall and per history function (P1-01, the
-# n = 2000 correct scenario, is the n = 2000 member of Part 2); the pooled
-# rows are in the CSV only
+# Part 2 calibration (base mechanism) per strategy and history function
 s2_lab <- c(`P2-01` = "Correct specification, n = 300",
             `P1-01` = "Correct specification, n = 2,000",
             `P2-02` = "Correct specification, n = 8,000",
             `P2-03` = "Near-violation of positivity",
             `P2-04` = "Weight truncation, 95th percentile")
 s2_ids <- names(s2_lab)
-# strategies by shape and Okabe-Ito colour; the legends of colour, fill
-# and shape merge (same name and labels)
 strat_col <- c(g1 = "#0072B2", g2 = "#D55E00", g3 = "#009E73")
 strat_lab <- c(expression(g[1]), expression(g[2]), expression(g[3]))
 dodge_y <- position_dodge(width = 0.6, orientation = "y", reverse = TRUE)
-# one calibration plot for statistic "studentised" (Fig 3, the standard)
-# or "raw" (interval-RRB MaxIB on the SMD scale; Web Appendix)
+# statistic "studentised" (Figure 3) or "raw" (MaxIB, Web Appendix)
 plot_calibration <- function(stat, xlab) {
   calp <- cal[cal$diagnostic == "RRB" & cal$statistic == stat &
                 cal$id %in% s2_ids & cal$strategy %in% strategies, ]

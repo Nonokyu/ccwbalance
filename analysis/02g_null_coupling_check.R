@@ -1,64 +1,13 @@
 # 02g_null_coupling_check.R ---------------------------------------------------
-# Check of the within-individual coupling of the conditional parametric null
-# reference (rrb_null()). The default redraw gives the censorable clones of
-# one individual at one time (id x time, a "tied group") one shared uniform
-# variate U, and clone g is "treated in t" iff U < p_g, where
-# p_g = 1 - pi_hat (clone censored on A_t = 1) or pi_hat (censored on
-# A_t = 0) is the initiation probability implied by its strategy-specific
-# censoring model; it is censored iff treated (censored on A_t = 1) or iff
-# untreated (censored on A_t = 0). The redrawn states of two clones are mutually
-# inconsistent (one treated, the other untreated) with probability
-# |p_g - p_g'|, i.e. exactly when the strategy-specific models disagree.
-#
-# For each replicate (or the cohort) the script reports
-#   * tied groups: number, fraction of censorable rows in tied groups, and
-#     the within-group range of p (max p - min p): mean, median, 95th pct,
-#     separately for groups whose clones share the orientation and groups
-#     with opposite orientations. In the simulation (g1 censored only at
-#     t = w1 - 1, g2 the nested longer window censored only at t = w2 - 1,
-#     g3 censored on initiation in 0, ..., w2 - 1) every tied group has
-#     opposite orientations: g1 grace_end vs g3 no_init at t = w1 - 1 and
-#     g2 grace_end vs g3 no_init at t = w2 - 1, so the same-orientation
-#     statistics are NA (n_tied_same = 0). The same holds in the
-#     Webster-Clark cohort (0_30 grace_end vs no_0_90 no_init at day 20-29,
-#     0_90 grace_end vs no_0_90 no_init at day 80-89);
-#   * expected inconsistency rate (mean range over tied groups) and the
-#     empirical rate under the shared-U and the independent redraw;
-#   * the MaxIB null reference (95th percentile, exceedance of the observed
-#     MaxIB) under three redraw schemes:
-#       independent  one Bernoulli(1 - pi_hat) per censorable row
-#                    (rrb_null(coupling = "independent")),
-#       shared       one U per id x time (rrb_null() default, .null_draw()),
-#       common       one A* ~ Bernoulli(p_common) per id x time from a single
-#                    initiation model P(A_t = 1 | H_t) fitted to the
-#                    untreated person-time; D* = A* (censored on A_t = 1) or
-#                    1 - A* (censored on A_t = 0);
-#     each followed by the package's refit (.null_refit()) and interval RRB
-#     (.null_rrb()); same cell selection as rrb_null();
-#   * the null SD of the interval RRB of X in the g1 grace-end cell and the
-#     g3 cell at t = w1 - 1 (sd_x_g1_*, sd_x_g3_*) and in the g2 grace-end
-#     cell and the g3 cell at t = w2 - 1 (sd_x_g2_*, sd_x_g3w2_*) under each
-#     scheme.
-#
-# Part 1: simulation, correctly specified censoring model, n = 2000 and 300,
-#         MaxIB over g1, g2, g3 and eight history functions (as in the
-#         paper).
-# Part 2: Webster-Clark SynPUF cohort (analysis/wc_data.R, base censoring
-#         model as analysis/03b), MaxIB over all strategies and per
-#         strategy, eleven features (five baseline covariates, the three
-#         time-varying claims indicators visit, outpt, fill, and the three
-#         depth functions fill_lag, fill_30, fill_cum; wc$feats). Skipped
-#         with a message if the data are absent.
-#
-# Outputs: output/sim/null_coupling_check.csv     one row per replicate
-#          output/sim/null_coupling_summary.csv   one row per n
-#          output/empirical/wc_null_coupling.csv  scheme x strategy
-#
-# Configuration: CCW_CORES (default detectCores() - 1), N_REPS (200),
-#                N_DRAWS (300; the Webster-Clark part always uses 500),
-#                COUPLING_SIM (default 1; 0 skips part 1 and leaves the
-#                output/sim files unchanged).
-# Run from the project root:  Rscript analysis/02g_null_coupling_check.R
+# Within-individual coupling of the null reference of rrb_null() (Appendix
+# S2): MaxIB null reference under independent, shared-uniform and common-model
+# redraws. Part 1 is the simulation; part 2 the Webster-Clark cohort (skipped
+# if data-raw/webster_clark/ or data-raw/synpuf_claims/ is absent).
+# Outputs: output/sim/null_coupling_{check,summary}.csv,
+#   output/empirical/wc_null_coupling.csv.
+# Env vars: CCW_CORES, N_REPS (200), N_DRAWS (300), COUPLING_SIM (0 skips
+#   part 1).
+# Run: Rscript analysis/02g_null_coupling_check.R
 
 if (!file.exists("DESCRIPTION")) stop("Run this script from the project root.")
 suppressMessages(pkgload::load_all(".", quiet = TRUE))
@@ -138,8 +87,7 @@ common_p <- function(s, fit_rows, formula) {
   fit <- stats::glm(formula, family = stats::binomial(), data = fit_rows)
   first <- which(s$poss)[!duplicated(s$grp)]
   nd <- s$data[first, , drop = FALSE]
-  # groups are numbered in order of first appearance, so `first` is sorted
-  # by group
+  # groups are numbered in order of first appearance
   unname(stats::predict(fit, newdata = nd, type = "response"))
 }
 
@@ -205,9 +153,7 @@ one_rep <- function(n, rep) {
   w <- fit_censoring_model(d, SIM_FORMULA)
   s <- null_setup(w, FEATS)
   ts <- tie_stats(s)
-  # common initiation model fitted to g3's no_init rows: the untreated
-  # person-time at every censorable time 0, ..., w2 - 1 (g1 and g2 are
-  # censorable only at w1 - 1 and w2 - 1, inside this range)
+  # common initiation model fitted to g3's untreated rows at times 0..w2 - 1
   fit_rows <- s$data[s$data$strategy == "g3" & s$data$phase == "no_init", ]
   pc <- common_p(s, fit_rows, COMMON_SIM)
   sel <- as.character(s$obs$strategy) %in% c("g1", "g2", "g3")

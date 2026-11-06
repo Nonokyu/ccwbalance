@@ -1,21 +1,9 @@
 # 02e_se_ratio_robust.R --------------------------------------------------------
-# Robust SE ratio for the large-replicate correct-specification scenarios
-# P2-01, P1-01 and P2-02 (Parts 1 and 2) and the Part 3 scenario without a
-# treatment -> covariate effect (P3-01), for each of the two contrasts
-# g2g1 (theta = risk(g2) - risk(g1)) and g3g2 (theta = risk(g3) - risk(g2)).
-# The ratio of the mean bootstrap SE to the MC SD can be below 1 although
-# coverage is near 0.95 when a few outlying replicates inflate the MC SD.
-# This script reports the MC SD, a robust SD (IQR / 1.349), the mean and
-# median bootstrap SE, both ratios, coverage, the kurtosis of the estimates
-# and the largest standardised deviation.
-#
-# Inputs:  <sim_dir>/sim_results_<run>.csv of the runs that supply the ids
-#          (analysis/sim_paper_results.R)
-# Outputs: <sim_dir>/sim_se_ratio_robust.csv  one row per id x contrast
-#          (column `contrast`: "g2g1" or "g3g2")
-# CCW_SIM_DIR (default "output/sim") sets sim_dir.
-#
-# Run from the project root:  Rscript analysis/02e_se_ratio_robust.R
+# Robust SE ratio (MC SD vs IQR / 1.349 vs bootstrap SE), coverage and
+# kurtosis for P2-01, P1-01, P2-02 and P3-01, per contrast g2g1 and g3g2.
+# Inputs:  output/sim/sim_results_<run>.csv (analysis/sim_paper_results.R)
+# Outputs: output/sim/sim_se_ratio_robust.csv
+# Run:     Rscript analysis/02e_se_ratio_robust.R (CCW_SIM_DIR)
 
 if (!file.exists("DESCRIPTION")) stop("Run this script from the project root.")
 suppressMessages(pkgload::load_all(".", quiet = TRUE))

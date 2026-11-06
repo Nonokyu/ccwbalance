@@ -1,173 +1,12 @@
 # 02_simulation_study.R -------------------------------------------------------
-# Simulation study (report: 検証計画・再現可能資源・推奨プロトコル).
-#
-# Strategies of the DGM (simulate_ccw(), window = c(w1, w2), default 3, 9):
-#   g1  initiate in intervals 0, ..., w1 - 1 (forced at w1 - 1); artificial
-#       censoring only at t = w1 - 1 (phase "grace_end");
-#   g2  the nested longer window: initiate in 0, ..., w2 - 1 (forced at
-#       w2 - 1); artificial censoring only at t = w2 - 1 ("grace_end");
-#   g3  no initiation through w2 - 1; censored on initiation in
-#       0, ..., w2 - 1 ("no_init").
-# NOTE: g2 was redefined (formerly it had a "no_init" phase before w1). The
-# saved outputs in output/sim/ and analysis/scenarios_<run>.csv predate this
-# redesign (and have the old one-contrast columns) until the runs are redone.
-#
-# For every scenario in ccw_scenarios(<run>) (analysis/sim_scenarios.R) and
-# replicate:
-#   * simulate CCW data, fit the scenario's artificial-censoring model,
-#   * estimate strategy risks at the horizon and the two contrasts (CONTRASTS)
-#       g2g1  theta = risk(g2) - risk(g1)  (longer vs shorter window),
-#       g3g2  theta = risk(g3) - risk(g2)  (no initiation vs initiation
-#             within the window);
-#     |theta_hat - theta_true| with the truth from true_risk_ccw(),
-#   * bootstrap SE (B resamples of individuals, censoring model refitted;
-#     both contrasts from the same resamples) and a normal-approximation
-#     95% CI,
-#   * record every diagnostic (proposed + benchmark), aggregated over the
-#     three strategies (DIAG_STRATEGIES = g1, g2, g3).
-# End-of-grace intervals: eog1 = w1 (first interval after g1's grace
-# period) and eog2 = w2 (first interval after g2's grace period and after
-# the end of g3's censoring). Contrast cc is evaluated at t_eog(g2g1) = w1
-# and t_eog(g3g2) = w2.
-#
-# Columns of sim_results_<run>.csv:
-#   scenario, rep, n, risk_g1, risk_g2, risk_g3;
-#   per contrast cc in g2g1, g3g2: theta_hat_<cc>, theta_true_<cc>,
-#     se_boot_<cc>, abs_bias_<cc>, bias_<cc> (theta_hat - theta_true) and
-#     covered_<cc> (|bias| <= 1.96 se_boot);
-#   over g1, g2, g3 (cells with n_censored > 0): rrb_{raw,tr,all}_{iai,maxib},
-#     ks_iai, ks_max, mhb_iai, mhb_max, cumrrb_base_iai, cumrrb_base_maxib,
-#     jackson_cb_max, jackson_cb_mean, ess_ratio_min, w99_max, pi_min,
-#     pr_pi_small_max;
-#   end-of-grace strategy SMD per contrast (strategy_balance() with the
-#     contrast's first strategy as reference, rows of the second, at
-#     t_eog(cc)): eog_smd_base_max_<cc> (baseline X only; the practice),
-#     eog_smd_post_max_<cc> (post-baseline L only), eog_smd_max_<cc> (max of
-#     both); descriptive max |SMD| over follow-up: strat_smd_L_max_<cc>,
-#     strat_smd_X_max_<cc>;
-#   deterministic additions (computed after the RNG-using steps):
-#     jackson_cb_est_max  Jackson-type censoring balance (max |SMD|) with
-#                         the estimator's weights (censoring_balance(...,
-#                         weights = "estimator"); responds to truncation),
-#     cumrrb_base_eog1    max |cumulative RRB| of baseline X over g1, g2, g3
-#                         at t = w1,
-#     cumrrb_base_eog2    the same at t = w2,
-#     cumrrb_base_eog_diff_g2g1  |cumRRB_X(g2, w1) - cumRRB_X(g1, w1)|,
-#     cumrrb_base_eog_diff_g3g2  |cumRRB_X(g3, w2) - cumRRB_X(g2, w2)|,
-#     ltfu_cb_max         max |SMD| of unweighted LTFU censoring balance
-#                         (censored = "ltfu_next"), NA without LTFU,
-#     ltfu_rrb_max        max |unweighted interval RRB| for LTFU over cells
-#                         with n_censored > 0, NA without LTFU;
-#   individual-bootstrap interval of the cumulative RRB of X (CUM_CELLS),
-#     computed in the same bootstrap resamples as se_boot_<cc> (no
-#     additional random numbers), <g> in g1, g2, g3 and <tp> in eog1
-#     (t = w1), eog2 (t = w2), h (last interval): cumrrb_X_<g>_<tp>_obs,
-#     cumrrb_X_<g>_<tp>_boot_se, cumrrb_X_<g>_<tp>_excl0 (1 if the 2.5-97.5%
-#     percentile interval excludes 0) and cumrrb_boot_excl0_any (any of the
-#     nine cells); NA when B = 0;
-#   conditional parametric null reference rrb_null() of interval RRB
-#     (CCW_N_NULL_DRAWS draws), over g1, g2, g3: MaxIB over all history
-#     functions (null_maxib_obs, null_q95, null_p, null_exceed), the same
-#     per history function (suffix _<feature>), null_z_max (max |z| over the
-#     cells), null_frac_cells_p05 (fraction of cells with p_two < 0.05),
-#     null_n_cells; the null reference of the Jackson-type censoring balance
-#     (CB) from the same rrb_null() object: MaxIB of |CB| over cells with a
-#     defined observed CB and all history functions (null_cb_maxib_obs,
-#     null_cb_q95, null_cb_p, null_cb_exceed, null_cb_n_cells) and the
-#     per-feature exceedance null_cb_exceed_<feature>.
-#   per strategy <g> in g1, g2, g3 (each strategy has its own censoring
-#     model, so each is judged against the null reference of its own
-#     cells; appended after all columns above, including bias_<cc> and
-#     covered_<cc>; NA when the strategy has no cell): rrb_all_maxib_<g>,
-#     jackson_cb_max_<g>, null_maxib_obs_<g>, null_q95_<g>, null_p_<g>,
-#     null_exceed_<g>, per history function null_{maxib_obs,q95,p,exceed}_
-#     <feature>_<g>, null_z_max_<g>, null_n_cells_<g>, null_cb_maxib_obs_<g>,
-#     null_cb_q95_<g>, null_cb_p_<g>, null_cb_exceed_<g>, null_cb_n_cells_<g>
-#     and null_cb_exceed_<feature>_<g>. The pooled columns are the maxima
-#     over <g> (null_n_cells the sum); their exceedance uses the pooled q95.
-#   studentised maximum and censorable-row censoring balance (appended
-#     after all columns above; from the same rrb_null() object, so no
-#     additional random numbers), pooled over g1, g2, g3 (no suffix) and per
-#     strategy (suffix _<g>), [_<g>] below:
-#     studentised RRB (per cell |RRB| / null SD, maximum over the cells of
-#       null_z_max[_<g>], cells with a non-positive null SD excluded):
-#       null_z_q95[_<g>], null_z_p[_<g>], null_z_exceed[_<g>] (null_z_max >
-#       null_z_q95), null_z_n_excluded[_<g>], per history function
-#       null_z_max_<feature>[_<g>], null_z_q95_<feature>[_<g>],
-#       null_z_exceed_<feature>[_<g>];
-#     censoring balance over the censorable rows (censor_possible == TRUE;
-#       rrb_null()'s cb_cens_* elements; cells with a defined observed
-#       value): raw MaxIB null_cb_cens_maxib_obs[_<g>], null_cb_cens_q95
-#       [_<g>], null_cb_cens_p[_<g>], null_cb_cens_exceed[_<g>],
-#       null_cb_cens_n_cells[_<g>], null_cb_cens_exceed_<feature>[_<g>];
-#       studentised null_cb_cens_z_max[_<g>], null_cb_cens_z_q95[_<g>],
-#       null_cb_cens_z_exceed[_<g>];
-#     jackson_cb_cens_max[_<g>]  max |SMD| of censoring_balance(weighted =
-#       TRUE, rows = "censorable") with the model weights.
-# Then: estimator performance per scenario and contrast (theta_true_<cc>,
-# mean_theta_hat_<cc>, bias_<cc>, rmse_<cc>, mc_sd_<cc>, mean_se_boot_<cc>,
-# coverage_<cc>, mean_abs_bias_<cc>), mean diagnostics and the
-# null-reference exceedance rate, plus the per-strategy means
-# rrb_all_maxib_<g> and null_exceed_rate_<g>, then the exceedance rates
-# null_z_exceed_rate[_<g>], null_cb_cens_exceed_rate[_<g>] and
-# null_cb_cens_z_exceed_rate[_<g>] appended as the last columns
-# (sim_performance_<run>.csv); the tables and
-# figures of the manuscript are made by
-# analysis/02b_simulation_tables_paper.R.
-#
-# Runs (CCW_RUN; the four runs that supply the manuscript, see
-# analysis/sim_scenarios.R):
-#   main  (default) Parts 1-3 ccw_scenarios("main") (Part 1 factorial,
-#      Part 2 null-reference calibration, Part 3); n and B per scenario
-#      (scenario `n`, `n_boot`), 200 replicates (100 for n = 8000).
-#   manycov  ccw_scenarios("manycov"): extended calibration of the null
-#      reference (many correlated baseline covariates X2-X9, n = 300 with
-#      many covariates, rare artificial censoring, extreme weights) and two
-#      detection scenarios with an omitted X2 correlated (rho = 0.5) or not
-#      (rho = 0) with X. Run like main (200 replicates, scenario n / n_boot);
-#      the scenario's extra covariates (`extra_feats`) are added to the
-#      monitored history functions, so the per-feature null columns
-#      _X2 ... _X9 exist only for those scenarios (NA elsewhere).
-#   largerep  ccw_scenarios("largerep"): large-replicate calibration of the
-#      null reference for RRB and censoring balance under the correct model
-#      (n = 300 / 2000 / 8000), early events in g1's grace period (end-of-grace
-#      SMD of X non-zero under correct weights through outcome depletion;
-#      cumulative RRB of X stays ~0), and the omitted-L detection scenario
-#      with truncation at the 95th percentile or near-positivity violation.
-#      The number of replicates is the scenario's `n_rep` (1000 / 500 / 200).
-#   variants  ccw_scenarios("variants"): omitted L_t alone (beta2 = beta5
-#      = 0), the L_t^2 cells without outcome effect at gamma0 = -4.5, and
-#      early_events with 500 bootstrap resamples (scenario n_rep = 200).
-# Outputs are suffixed by the run: <CCW_SIM_DIR>/sim_results_<run>.csv,
-# sim_performance_<run>.csv, sim_settings_<run>.csv and (only with the
-# default CCW_SIM_DIR) analysis/scenarios_<run>.csv.
-#
-# Configuration (environment variables):
-#   CCW_RUN     main | manycov | largerep | variants              [main]
-#   CCW_N_REPS  replicates per scenario    [main, manycov: 200, n = 8000:
-#                                           100; largerep, variants: n_rep]
-#   CCW_N_SUBJ  individuals per replicate (unless the scenario sets n)
-#                                                                 [2000]
-#   CCW_N_BOOT  bootstrap resamples per replicate for the CI
-#                                                       [scenario n_boot]
-#   CCW_N_NULL_DRAWS  null-reference draws per replicate          [500]
-#   CCW_N_MC    Monte Carlo size for the true risks             [5e5]
-#   CCW_OUT_SUFFIX  output suffix                               [run]
-#   CCW_CORES   parallel workers (parallel::mclapply)       [detectCores()-1]
-#   CCW_SIM_DIR output directory of the sim_*.csv files     [output/sim]
-#               (any other value, e.g. a scratch directory for a smoke
-#               test, also leaves analysis/scenarios_<run>.csv untouched)
-# Random numbers: one L'Ecuyer-CMRG stream per task, assigned in task order
-# (heavy scenarios first, by n x (B + 10)), so changing a scenario's n or B
-# (or the number of replicates) reorders the tasks and changes the draws of
-# every replicate. Data generation, bootstrap and null draws share the
-# replicate's stream, except that rrb_null() is reseeded with a seed drawn
-# from that stream after the bootstrap. The seed of a run is 20260923 plus
-# its fixed offset (SEED_OFFSET; the offsets of the former script version,
-# kept so that the draws do not change). The g2 redesign changes the
-# simulated data (and hence the results) but not this stream design.
-#
-# Run from the project root:  Rscript analysis/02_simulation_study.R
+# Simulation study (Parts 1-3): for each scenario of ccw_scenarios(CCW_RUN)
+# (analysis/sim_scenarios.R) and replicate, estimates the contrasts g2 - g1
+# and g3 - g2 with bootstrap SEs and records all diagnostics and the null
+# reference. Writes <CCW_SIM_DIR>/sim_{results,performance,settings}_<run>.csv
+# and analysis/scenarios_<run>.csv; see analysis/README.md.
+# Env: CCW_RUN (main | manycov | largerep | variants), CCW_CORES, CCW_N_REPS,
+# CCW_N_SUBJ, CCW_N_BOOT, CCW_N_NULL_DRAWS, CCW_N_MC, CCW_OUT_SUFFIX,
+# CCW_SIM_DIR. Run:  CCW_RUN=main Rscript analysis/02_simulation_study.R
 
 if (!file.exists("DESCRIPTION")) stop("Run this script from the project root.")
 suppressMessages(pkgload::load_all(".", quiet = TRUE))
@@ -175,8 +14,7 @@ source(file.path("analysis", "sim_scenarios.R"))
 
 env_num <- function(x, default) as.numeric(Sys.getenv(x, as.character(default)))
 RUN <- Sys.getenv("CCW_RUN", "main")
-# seed offsets of the runs (fixed; do not change: they set the random
-# numbers of the saved results)
+# fixed seed offsets of the runs (reproduce the saved results)
 SEED_OFFSET <- c(main = 3, manycov = 4, largerep = 5, variants = 7)
 stopifnot(RUN %in% names(SEED_OFFSET))
 SUFFIX <- Sys.getenv("CCW_OUT_SUFFIX", RUN)
@@ -208,12 +46,10 @@ raw_feats <- c("X", "L")
 tr_feats <- c("L_sq", "L_lagprod", "L_diff", "L_cummean", "L_gt0", "L_x_X")
 all_feats <- c(raw_feats, tr_feats)
 base_feats <- c("X", "L_base")
-# history functions of a scenario: all_feats plus its extra baseline
-# covariates (run manycov; identical to all_feats otherwise)
+# history functions of a scenario: all_feats plus its extra covariates
 feats_of <- function(sc) c(all_feats, as.character(sc$extra_feats))
 
-# per-scenario replicates and bootstrap size (run main defaults; the
-# scenarios of runs largerep and variants set `n_rep`)
+# per-scenario replicates and bootstrap size
 n_of <- function(sc) if (is.null(sc$params[["n"]])) N_SUBJ else sc$params[["n"]]
 reps_of <- function(sc) {
   if (!is.na(N_REPS)) return(N_REPS)
@@ -235,8 +71,7 @@ contrast_of <- function(est) {
   vapply(CONTRASTS, function(cc) unname(r[cc[1]] - r[cc[2]]), numeric(1))
 }
 
-# end-of-grace times: eog1 = w1 (after g1's grace), eog2 = w2 (after g2's
-# grace and g3's censoring); t_eog of contrast g2g1 is w1, of g3g2 w2
+# end-of-grace times: eog1 = w1 (contrast g2g1), eog2 = w2 (g3g2)
 eog_times <- function(pars) c(eog1 = pars$window[1], eog2 = pars$window[2])
 T_EOG_CC <- c(g2g1 = "eog1", g3g2 = "eog2")
 
@@ -245,11 +80,8 @@ max_or_na <- function(v) {
   if (length(v) == 0) NA_real_ else max(v)
 }
 
-# bootstrap SE of the contrasts; in the same resamples (no additional random
-# numbers) the cumulative RRB of X for g1, g2, g3 at eog1, eog2 and the
-# horizon. `cum_t` is the named vector c(eog1, eog2, h) of times. Returns
-# list(se, cum): `se` named over the contrasts, `cum` a data frame
-# (strategy, tp, boot_se, lcl, ucl) or NULL when B <= 0.
+# bootstrap SE of the contrasts and, in the same resamples, the cumulative
+# RRB of X at cum_t = c(eog1, eog2, h); `cum` is NULL when B <= 0
 CUM_CELLS <- expand.grid(strategy = DIAG_STRATEGIES,
                          tp = c("eog1", "eog2", "h"),
                          stringsAsFactors = FALSE)
@@ -303,8 +135,7 @@ agg_max <- function(x, value, feats) {
   c(iai = max(a$iai), maxib = max(a$maxib))
 }
 
-# MaxIB per diagnostic strategy (named over DIAG_STRATEGIES; the same cells
-# as agg_max() restricted to one strategy, NA when it has none)
+# MaxIB per diagnostic strategy (NA when it has no cell)
 agg_max_by_strategy <- function(x, value, feats) {
   vapply(DIAG_STRATEGIES, function(g) {
     a <- agg_max(x[as.character(x$strategy) == g, ], value, feats)
@@ -374,10 +205,8 @@ one_replicate <- function(sc, rep, truth) {
     pi_min = min(ws$pi_min, na.rm = TRUE),
     pr_pi_small_max = max(ws$pr_pi_small, na.rm = TRUE)
   ))
-  # end-of-grace strategy SMD per contrast (reference cc[1], rows cc[2]) at
-  # t_eog(cc): baseline covariate only (the practice), post-baseline L only
-  # (extension), and the maximum over both; descriptive strategy balance of
-  # L and X over follow-up
+  # end-of-grace strategy SMD per contrast (X only, L only, both) and
+  # descriptive strategy balance over follow-up
   for (cc in CC) {
     sb <- strategy_balance(w, raw_feats, reference = CONTRASTS[[cc]][1])
     sb <- sb[as.character(sb$strategy) == CONTRASTS[[cc]][2], ]
@@ -393,7 +222,7 @@ one_replicate <- function(sc, rep, truth) {
       max_or_na(sb$smd[sb$feature == "X"])
   }
 
-  # additional deterministic diagnostics (no random numbers are drawn here)
+  # deterministic diagnostics (no random numbers are drawn here)
   # Jackson-type censoring balance with the estimator's (truncated) weights
   cbe <- censoring_balance(w, feats_sc, weighted = TRUE,
                            weights = "estimator")
@@ -425,8 +254,7 @@ one_replicate <- function(sc, rep, truth) {
   out$ltfu_cb_max <- max_or_na(cbl$smd)
   out$ltfu_rrb_max <- max_or_na(rl$rrb)
 
-  # cumulative RRB of X (g1, g2, g3; eog1, eog2, horizon): observed value
-  # and individual-bootstrap SE / percentile interval (from boot_se())
+  # cumulative RRB of X: observed value, bootstrap SE and interval
   excl <- logical(0)
   for (k in seq_len(nrow(CUM_CELLS))) {
     g <- CUM_CELLS$strategy[k]
@@ -443,8 +271,7 @@ one_replicate <- function(sc, rep, truth) {
   }
   out$cumrrb_boot_excl0_any <- if (all(is.na(excl))) NA_real_ else
     as.numeric(any(excl == 1, na.rm = TRUE))
-  # per strategy: MaxIB of interval RRB and max |CB| (moved to the end of
-  # the results with the per-strategy null columns)
+  # per strategy: MaxIB of interval RRB and max |CB|
   a_all_g <- agg_max_by_strategy(r, "rrb", feats_sc)
   for (g in DIAG_STRATEGIES) {
     out[[paste0("rrb_all_maxib_", g)]] <- a_all_g[[g]]
@@ -459,16 +286,13 @@ one_replicate <- function(sc, rep, truth) {
   ext <- null_summary_ext(nr, feats_sc, cbc)
   res <- cbind(as.data.frame(out), null_summary(nr, feats_sc),
                as.data.frame(ext))
-  # columns added after the four runs were first defined; moved behind all
-  # other columns when the results are combined
+  # extension columns, placed last when the results are combined
   attr(res, "ext_cols") <- names(ext)
   res
 }
 
-# conditional parametric null reference of interval RRB, MaxIB over the
-# diagnostic strategies (g1, g2, g3) and all / each history function; the
-# same for the censoring balance (CB). `nr` is the rrb_null() object of the
-# replicate
+# null-reference summaries of RRB and CB, pooled over DIAG_STRATEGIES and
+# per strategy; `nr` is the rrb_null() object of the replicate
 null_summary <- function(nr, feats = all_feats) {
   cells <- nr$cells
   sims <- matrix(nr$draws$rrb, nrow = nrow(cells))  # cells x draws
@@ -498,8 +322,7 @@ null_summary <- function(nr, feats = all_feats) {
   res$null_z_max <- if (all(is.na(z))) NA_real_ else max(z, na.rm = TRUE)
   res$null_frac_cells_p05 <- mean(cells$p_two[in_s] < 0.05)
   res$null_n_cells <- sum(in_s)
-  # censoring balance (CB) from the same draws: MaxIB of |CB| over the
-  # g1/g2/g3 cells with a defined observed CB (as in rrb_null()'s maxib_cb)
+  # censoring balance (CB) from the same draws
   sims_cb <- matrix(nr$draws$cb, nrow = nrow(cells))
   cb_ok <- in_s & !is.na(cells$cb_obs)
   cb_ref <- function(sel) {
@@ -524,8 +347,7 @@ null_summary <- function(nr, feats = all_feats) {
     res[[paste0("null_cb_exceed_", f)]] <-
       cb_ref(cb_ok & as.character(cells$feature) == f)[["exceed"]]
   }
-  # per strategy (each has its own censoring model): the same summaries
-  # over the cells of strategy g only
+  # per strategy: the same summaries over the cells of strategy g
   is_f <- function(f) as.character(cells$feature) == f
   for (g in DIAG_STRATEGIES) {
     in_g <- in_s & as.character(cells$strategy) == g
@@ -560,11 +382,8 @@ null_summary <- function(nr, feats = all_feats) {
   as.data.frame(res)
 }
 
-# observed vs null maximum of |value| over the cells `sel` (`obs_v` one
-# value per cell, `sims` cells x draws). With `scale` (one value per cell,
-# the null SD) the studentised maximum: values and draws divided by
-# `scale`, cells with NA or non-positive `scale` excluded (`n_excluded`),
-# as in rrb_null()'s maxib_stud
+# observed vs null max |value| over cells `sel`; with `scale` (null SD) the
+# studentised maximum (cells with NA or non-positive scale excluded)
 max_ref <- function(obs_v, sims, sel, scale = NULL) {
   n_exc <- 0
   if (!is.null(scale)) {
@@ -594,12 +413,8 @@ max_ref <- function(obs_v, sims, sel, scale = NULL) {
     exceed = as.numeric(obs > q95), n_excluded = n_exc)
 }
 
-# columns added for the studentised maximum and the censorable-row censoring
-# balance (appended after all other columns), pooled over g1, g2, g3 (no
-# suffix) and per strategy (suffix _<g>), from the same rrb_null() object as
-# null_summary() (no additional random numbers). `cbc` is
-# censoring_balance(rows = "censorable") with the model weights, restricted
-# to DIAG_STRATEGIES
+# studentised maximum and censorable-row censoring balance, pooled and per
+# strategy; `cbc` is censoring_balance(rows = "censorable")
 null_summary_ext <- function(nr, feats, cbc) {
   cells <- nr$cells
   sims <- matrix(nr$draws$rrb, nrow = nrow(cells))
@@ -649,7 +464,7 @@ null_summary_ext <- function(nr, feats, cbc) {
 }
 
 # ---------------------------------------------------------------------------
-# truth and task list (one independent L'Ecuyer-CMRG stream per task)
+# truth and task list (one L'Ecuyer-CMRG stream per task)
 RNGkind("L'Ecuyer-CMRG")
 set.seed(SEED + SEED_OFFSET[[RUN]])
 t_start <- Sys.time()
@@ -694,8 +509,7 @@ if (length(failed) > 0) {
 }
 ok_list <- Filter(function(x) !("error" %in% names(x)), res_list)
 ext_cols <- unique(unlist(lapply(ok_list, attr, "ext_cols")))
-# runs manycov, largerep, variants: per-feature null columns may differ
-# between scenarios -> bind_rows (fills NA); run main keeps rbind
+# per-feature null columns may differ between scenarios
 res <- if (RUN %in% c("manycov", "largerep", "variants")) {
   as.data.frame(dplyr::bind_rows(ok_list))
 } else {
@@ -707,10 +521,7 @@ for (cc in CC) {
   res[[paste0("covered_", cc)]] <- abs(b) <= 1.96 * res[[paste0("se_boot_",
                                                                 cc)]]
 }
-# per-strategy columns (suffix _g1, _g2, _g3; not risk_<g>) last, so that
-# the pre-existing columns keep their positions
-# pre-existing columns keep their positions; the studentised and
-# censorable-row columns (ext_cols, see null_summary_ext()) come last
+# column order: pooled, per strategy (_g1, _g2, _g3), extension
 old_cols <- setdiff(names(res), ext_cols)
 new_cols <- setdiff(
   grep(sprintf("_(%s)$", paste(DIAG_STRATEGIES, collapse = "|")),
@@ -752,7 +563,7 @@ perf <- do.call(rbind, lapply(split(res, res$scenario), function(x) {
   out$ltfu_rrb_max <- mean(x$ltfu_rrb_max, na.rm = TRUE)
   out
 }))
-# null-reference summaries; tables and figures of the manuscript in 02b
+# null-reference summaries
 perf_d <- do.call(rbind, lapply(split(res, res$scenario), function(x) {
   data.frame(scenario = x$scenario[1],
              null_exceed_rate = mean(x$null_exceed, na.rm = TRUE),
@@ -775,8 +586,7 @@ perf_g <- do.call(rbind, lapply(split(res, res$scenario), function(x) {
   out
 }))
 perf <- merge(perf, perf_g, by = "scenario", sort = FALSE)
-# exceedance rates of the studentised maximum and the censorable-row
-# censoring balance (raw and studentised), pooled and per strategy
+# exceedance rates of the studentised maximum and the censorable-row CB
 perf_ext <- do.call(rbind, lapply(split(res, res$scenario), function(x) {
   out <- data.frame(scenario = x$scenario[1])
   for (sfx in c("", paste0("_", DIAG_STRATEGIES))) {

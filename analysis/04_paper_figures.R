@@ -1,38 +1,11 @@
 # 04_paper_figures.R ----------------------------------------------------------
-# Case-study figure of the manuscript (Figure 4, fig4_wc_rrb_profile.png),
-# written to output/figures/. Reads only saved outputs. The simulation
-# figures of the manuscript (Figure 2, sim_part1_factorial.png; Figure 3,
-# sim_part2_calibration.png) are written to output/figures/ by
-# analysis/02b_simulation_tables_paper.R.
-#
-# Webster-Clark SynPUF example (fig4_wc_rrb_profile.png), eleven history
-# functions: five baseline covariates, the three time-varying claims
-# indicators (visit, outpt, fill) and the three depth functions of the
-# dispensing history (fill_lag, fill_30, fill_cum; in no censoring model).
-#   A: weighted interval RRB, tutorial censoring model (source:
-#   output/empirical/wc_rrb.csv, written by
-#   analysis/03_empirical_webster_clark.R). When the individual-
-#   bootstrap file output/empirical/wc_rrb_boot_interval.csv exists
-#   (analysis/03c_wc_sensitivity.R) and the environment variable
-#   CCW_FIG4_BANDS is "1", 95% percentile bootstrap intervals are added for
-#   race_other, strategy 0_90 (grey bars); by default panel A has none.
-#   B: per strategy and function, the studentised maximum max |RRB| / null
-#   SD of the weighted interval RRB against the 95th percentile of the same
-#   maximum under the conditional null reference, tutorial model
-#   (output/empirical/wc_rrb_null_maxib_stud.csv,
-#   analysis/03b_wc_null_reference.R) and revised model with visit, outpt,
-#   fill (wc_use_null_maxib_stud.csv, analysis/03c_wc_sensitivity.R), with
-#   the censoring-model terms marked.
-#   C: weighted cumulative RRB of the five baseline covariates under no
-#   initiation D0-89, tutorial model only (one line type per covariate;
-#   the revised model gives the same trajectories within 0.003), with 95%
-#   percentile individual-bootstrap intervals at day 90 drawn as whiskers
-#   to the right of day 90 (output/empirical/wc_rrb_boot_cumulative.csv,
-#   always drawn when that file exists).
-#
-# Run from the project root, after analysis/03_empirical_webster_clark.R,
-# 03b_wc_null_reference.R and 03c_wc_sensitivity.R:
-#   Rscript analysis/04_paper_figures.R
+# Figure 4 of the manuscript (case study): A, weighted interval RRB under the
+# tutorial model; B, studentised maximum per strategy and history function
+# against its null 95th percentile, tutorial and revised (use) model;
+# C, cumulative RRB of the baseline covariates under no initiation, with
+# bootstrap intervals at day 90. Reads output/empirical/ (from 03, 03b, 03c);
+# writes output/figures/fig4_wc_rrb_profile.png.
+# Run: Rscript analysis/04_paper_figures.R (CCW_FIG4_BANDS=1 adds panel A bands)
 
 if (!file.exists("DESCRIPTION")) stop("Run this script from the project root.")
 suppressMessages(pkgload::load_all(".", quiet = TRUE))
@@ -43,7 +16,7 @@ fig_dir <- file.path("output", "figures")
 dir.create(fig_dir, recursive = TRUE, showWarnings = FALSE)
 
 # Webster-Clark RRB profile -------------------------------------------------
-delta <- 10 # days per interval (analysis/03_empirical_webster_clark.R)
+delta <- 10 # days per interval
 emp_dir <- file.path("output", "empirical")
 need <- function(f, hint) {
   path <- file.path(emp_dir, f)
@@ -53,8 +26,7 @@ need <- function(f, hint) {
 wc_all <- need("wc_rrb.csv", "analysis/03_empirical_webster_clark.R")
 use_all <- need("wc_use_rrb.csv", "analysis/03c_wc_sensitivity.R")
 wc <- wc_all[wc_all$method == "weighted", ]
-# each strategy up to its last interval with artificial censoring (end of
-# its grace period); the weights do not change afterwards
+# each strategy up to its last interval with artificial censoring
 cens <- wc[wc$scope == "interval" & wc$n_censored > 0, ]
 last_cens <- tapply(cens$time, cens$strategy, max)
 wc <- wc[wc$time <= last_cens[as.character(wc$strategy)], ]
@@ -66,10 +38,8 @@ strategy_labels <- c(
 wc$day <- (wc$time + 1) * delta # end of interval, where censoring occurs
 wc$strategy_lab <- factor(strategy_labels[wc$strategy],
                           levels = strategy_labels)
-# point groups of panel A: the dispensing indicator, its three depth
-# functions (in no censoring model) and all other functions (small grey);
-# the baseline covariates, including race other (discussed with panel B in
-# the text), are not highlighted
+# point groups of panel A: the dispensing indicator, its depth functions and
+# all other functions (small grey)
 depth <- c("fill_lag", "fill_30", "fill_cum")
 grp_labels <- c(
   fill = "Dispensing indicator",
@@ -86,8 +56,7 @@ print(wc[hl, c("scope", "strategy", "time", "day", "feature", "rrb")],
       digits = 3, row.names = FALSE)
 wc$line_id <- interaction(wc$strategy, wc$feature, wc$scope)
 
-# 95% percentile bootstrap bands (race_other, strategy 0_90),
-# matched to the weighted rows by strategy x time x feature x scope
+# 95% percentile bootstrap bands (race_other, strategy 0_90)
 boot_files <- file.path(emp_dir, "wc_rrb_boot_interval.csv")
 band <- NULL
 show_bands <- identical(Sys.getenv("CCW_FIG4_BANDS", "0"), "1")
@@ -95,7 +64,6 @@ if (show_bands && all(file.exists(boot_files))) {
   bt <- do.call(rbind, lapply(boot_files, function(f) {
     read.csv(f)[, c("strategy", "time", "feature", "scope", "lcl", "ucl")]
   }))
-  # strategy discussed in the text (the 0-29 band is too wide to read)
   band <- merge(wc[wc$feature == "race_other" &
                      as.character(wc$strategy) == "0_90", ], bt,
                 by = c("strategy", "time", "feature", "scope"))
@@ -105,18 +73,8 @@ if (show_bands && all(file.exists(boot_files))) {
           "figure without bands.")
 }
 
-# Panel A: interval RRB, one point per cell (strategy x interval with
-# artificial censoring); the cells are separate statistics, so no lines.
-# Panel B: cumulative RRB, a trajectory over the baseline population, lines.
-# Both are faceted by strategy; the history function is the point shape (A)
-# or the line type (B); the other covariates are small grey points / thin
-# grey lines
 wc_a <- wc[wc$scope == "interval" & wc$n_censored > 0, ]
-# cumulative RRB (panel C) only under no initiation: the initiation
-# strategies censor in a single interval, where it coincides with the
-# interval RRB up to the reference population and the carried-forward
-# events; tutorial censoring model only (the revised model gives the same
-# trajectories within 0.003)
+# panel C: cumulative RRB under no initiation, tutorial censoring model
 model_labels <- c(base = "Tutorial model", use = "Revised model")
 base_feats <- c("age", "female", "renal", "race_black", "race_other")
 base_labels <- c(age = "Age", female = "Female", renal = "Renal",
@@ -127,8 +85,7 @@ wc_c <- wc_all[wc_all$method == "weighted" & wc_all$scope == "cumulative" &
                  wc_all$time <= last_cens[["no_0_90"]], ]
 wc_c$day <- (wc_c$time + 1) * delta
 wc_c$cov_lab <- factor(base_labels[wc_c$feature], levels = base_labels)
-# 95% percentile individual-bootstrap intervals at the last censoring
-# interval (day 90), staggered to the right of day 90
+# bootstrap intervals at day 90, staggered to the right of day 90
 boot_cum_file <- file.path(emp_dir, "wc_rrb_boot_cumulative.csv")
 whisk <- NULL
 if (file.exists(boot_cum_file)) {
@@ -138,8 +95,7 @@ if (file.exists(boot_cum_file)) {
                    whisk$time == last_cens[["no_0_90"]] &
                    whisk$feature %in% base_feats, ]
   whisk$cov_lab <- factor(base_labels[whisk$feature], levels = base_labels)
-  # solid whiskers in legend order (age, female, renal, race Black, race
-  # other) at x = 92, 94, ..., 100, marked by the covariate's symbol
+  # whiskers at x = 92, 94, ..., 100 in legend order
   whisk$x <- 92 + 2 * (as.integer(whisk$cov_lab) - 1)
   cat("\nPanel C: bootstrap intervals at day 90 (no_0_90, cumulative)\n")
   print(whisk[, c("feature", "rrb_obs", "boot_se", "lcl", "ucl", "B")],
@@ -149,21 +105,18 @@ if (file.exists(boot_cum_file)) {
           "panel C without bootstrap intervals.")
 }
 hl_a <- wc_a$group != grp_labels[["other"]]
-key_w <- grid::unit(1.4, "cm") # long enough to show the long dash
+key_w <- grid::unit(1.4, "cm")
 shape_fun <- c(16, 17, 15, 18, 16)
 size_fun <- c(1.9, 1.9, 1.8, 2.4, 0.9)
 # Okabe-Ito colours (colour-blind safe); shapes and line types are kept as
 # a redundant encoding for greyscale printing
 oi <- c(blue = "#0072B2", vermillion = "#D55E00", green = "#009E73",
         pink = "#CC79A7", orange = "#E69F00")
-# A: one colour per highlighted function (dispensing indicator vermillion,
-# its depth functions blue, green and pink), the other functions grey
 col_fun <- c(unname(oi[c("vermillion", "blue", "green", "pink")]), "grey60")
 band_of <- function(sc) if (is.null(band)) NULL else band[band$scope == sc, ]
 x_scale <- scale_x_continuous(breaks = seq(10, 90, 10), limits = c(5, 95),
                               expand = expansion(mult = 0.02))
-# legends at the right of each panel so that the panel bodies keep the
-# full height (patchwork aligns the bodies across the three panels)
+# legends at the right so that patchwork aligns the panel bodies
 panel_theme <- theme_minimal(base_size = 10) +
   theme(legend.position = "right", legend.title.position = "top",
         legend.margin = ggplot2::margin(0, 0, 0, 4),
@@ -172,9 +125,8 @@ panel_theme <- theme_minimal(base_size = 10) +
                                   margin = margin(b = 2)),
         strip.text = element_text(hjust = 0))
 
-# the two initiation strategies censor only at the end of their grace
-# period (one cell each), so the day axis is discrete and the panel width is
-# proportional to the number of cells
+# initiation strategies censor in one interval each: discrete day axis and
+# panel widths proportional to the number of cells
 wc_a$day_f <- factor(wc_a$day, levels = sort(unique(wc_a$day)))
 p_a <- ggplot(wc_a, aes(.data$day_f, .data$rrb)) +
   (if (!is.null(band_of("interval"))) {
@@ -208,9 +160,7 @@ p_a <- ggplot(wc_a, aes(.data$day_f, .data$rrb)) +
 
 stopifnot(nrow(wc_c) > 0, setequal(wc_c$feature, base_feats))
 lt_cov <- c("solid", "dashed", "dotted", "dotdash", "longdash")
-# point shape of each covariate, on the trajectory and on its day-90
-# bootstrap whisker (open symbols so the line type stays visible in the
-# merged legend key)
+# open symbols so that the line type stays visible in the merged legend key
 shape_cov <- c(21, 24, 22, 23, 25)
 col_cov <- unname(oi[c("blue", "vermillion", "green", "pink", "orange")])
 p_cum <- ggplot(wc_c, aes(.data$day, .data$rrb, group = .data$cov_lab)) +
@@ -247,11 +197,7 @@ p_cum <- ggplot(wc_c, aes(.data$day, .data$rrb, group = .data$cov_lab)) +
        y = "Cumulative RRB") +
   panel_theme
 
-# Panel B: per-function studentised maximum max |RRB| / null SD of the
-# weighted interval RRB per strategy (the censoring model is fitted
-# separately within each strategy, so each strategy is judged against the
-# null reference of its own model), under the tutorial and the revised
-# censoring model; the unweighted RRB has no studentised counterpart ------
+# Panel B: per-strategy studentised maximum of the weighted interval RRB --
 feature_labels <- c(
   age = "Age", female = "Female", renal = "Renal", race_black = "Race Black",
   race_other = "Race other", visit = "Visit", outpt = "Outpatient",
@@ -260,7 +206,7 @@ feature_labels <- c(
   fill_cum = "Dispensings since discharge",
   "(all)" = "All eleven"
 )
-# censoring-model terms (analysis/wc_data.R: base and use formulas)
+# censoring-model terms (formulas base and use of analysis/wc_data.R)
 in_model <- list(base = c("age", "female", "renal"),
                  use = c("age", "female", "renal", "visit", "outpt", "fill"))
 mx <- rbind(
@@ -287,10 +233,8 @@ print(data.frame(model = mx$model, strategy = mx$strategy,
                  null_q95 = round(mx$null_q95, 3), p = round(mx$p, 3),
                  exceeds = mx$stud_obs > mx$null_q95),
       row.names = FALSE)
-# one row per function: the tutorial model (upper half of the row, blue)
-# and the revised model (lower half, vermillion) each with its own null
-# bar in a light tint of the model colour; the half-row behind a model's
-# bar is shaded when the function is a term of that model
+# one row per function: tutorial model in the upper half, revised model in
+# the lower half; the half-row is shaded when the function is a model term
 off <- c(base = 0.2, use = -0.2)
 mx$y <- as.integer(mx$feature_lab) + off[mx$model]
 term_rows <- do.call(rbind, lapply(names(in_model), function(m) {
@@ -298,7 +242,7 @@ term_rows <- do.call(rbind, lapply(names(in_model), function(m) {
   data.frame(ymin = if (m == "base") y else y - 0.5,
              ymax = if (m == "base") y + 0.5 else y)
 }))
-bar_col <- c(base = "#BDD7EC", use = "#F5C9B0") # light blue / vermillion
+bar_col <- c(base = "#BDD7EC", use = "#F5C9B0")
 
 p_c <- ggplot(mx, aes(y = .data$y)) +
   geom_rect(data = term_rows,
@@ -310,11 +254,9 @@ p_c <- ggplot(mx, aes(y = .data$y)) +
   geom_point(aes(x = .data$stud_obs, shape = .data$type,
                  fill = .data$type, colour = .data$type),
              size = 1.6, stroke = 0.6) +
-  # columns: strategies (own censoring model, own x scale)
   facet_grid(~strategy_lab, scales = "free_x") +
   scale_shape_manual(values = c(21, 21), limits = levels(mx$type),
                      name = "Observed max|z|") +
-  # tutorial model blue (filled), revised model vermillion (open)
   scale_colour_manual(values = c(oi[["blue"]], oi[["vermillion"]]),
                       limits = levels(mx$type), name = "Observed max|z|") +
   scale_fill_manual(values = c(oi[["blue"]], "white"),
@@ -335,10 +277,7 @@ p_c <- ggplot(mx, aes(y = .data$y)) +
         legend.margin = ggplot2::margin(0, 0, 0, 4),
         strip.text = element_text(hjust = 0))
 
-# each panel keeps its own legend (no collected legend); the y-axis titles
-# of A and C are freed from the alignment with the wide row labels of B so
-# that they sit next to their own axis (patchwork >= 1.2); the panels carry
-# only the tags A, B, C (the caption describes them)
+# separate legends; y-axis titles freed from the alignment with panel B
 fig4 <- free(p_a, type = "label", side = "l") /
   p_c /
   free(p_cum, type = "label", side = "l") +

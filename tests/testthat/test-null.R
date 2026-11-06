@@ -225,9 +225,7 @@ cb_fixture <- function() {
 }
 
 test_that("adding censoring balance leaves the RRB output unchanged", {
-  # reference computed with rrb_null() before censoring balance was added
-  # (regenerated on the nested-g2 DGM after checking that the code still
-  # reproduced the original reference on the pre-redesign simulator data)
+  # stored rrb_null() output computed without the censoring-balance columns
   ref <- readRDS(test_path("ref-rrb-null.rds"))
   w <- cb_fixture()
   f <- c("X", "L", "L_lag")

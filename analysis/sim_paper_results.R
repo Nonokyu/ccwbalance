@@ -1,18 +1,12 @@
 # sim_paper_results.R ----------------------------------------------------------
-# Replicate-level results of the scenarios of the manuscript. Each id of
-# paper_scenarios() (analysis/sim_scenarios.R) points to the run scenario
-# whose results the manuscript reports, so that the later runs replace the
-# superseded rows of earlier runs by construction (see the column
-# `supersedes` of paper_scenarios()).
-# Sourced by the paper table scripts 02b, 02d and 02e after
+# Replicate-level results of the manuscript scenarios, read from the runs
+# that supply them (see paper_scenarios() in analysis/sim_scenarios.R).
+# Sourced by 02b, 02d and 02e after
 #   pkgload::load_all("."); source("analysis/sim_scenarios.R")
 
-# Read output/sim/sim_results_<run>.csv of the runs that supply the
-# requested ids (default: all) and return the rows of their run scenarios,
-# in id order and in file order within an id, with the columns id, part,
-# label and run in front (dplyr::bind_rows, so that columns absent
-# from a run, e.g. the per-feature columns of X2-X9, are NA). sim_dir
-# defaults to the environment variable CCW_SIM_DIR, else output/sim.
+# Rows of the requested ids (default: all) from sim_results_<run>.csv in
+# `sim_dir` (default: CCW_SIM_DIR, else output/sim), with id, part, label
+# and run in front; columns absent from a run are NA.
 read_paper_results <- function(ids = NULL, sim_dir = NULL) {
   if (is.null(sim_dir)) {
     sim_dir <- Sys.getenv("CCW_SIM_DIR", "")

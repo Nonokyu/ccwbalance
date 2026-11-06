@@ -1,145 +1,17 @@
-# Simulation scenario grids for the analysis scripts.
-#
-# Defines ccw_scenarios(), scenario_table(), paper_scenarios(),
-# paper_scenario() and the .scenarios_* helpers (moved here from the
-# package's former R/scenarios.R). These are plain functions, not part of
-# ccwbalance. Load the package first, e.g.
-#   pkgload::load_all(".")
-#   source("analysis/sim_scenarios.R")
-# The only package function called is ccw_sim_params() (exported, so it
-# resolves with library(ccwbalance) as well as with load_all()).
-#
-# Runs and paper scenarios
-# ------------------------
-# A run is one execution of analysis/02_simulation_study.R
-# (CCW_RUN=<run>) over the grid ccw_scenarios(<run>); its raw outputs are
-# output/sim/sim_results_<run>.csv, sim_performance_<run>.csv,
-# sim_settings_<run>.csv and analysis/scenarios_<run>.csv. The four runs
-# supply the manuscript:
-#   main      Parts 1-3 of the manuscript
-#   manycov   many correlated covariates, extreme weights (and four
-#             unreported scenarios)
-#   largerep  large-replicate runs of the correct specification (1,000 /
-#             1,000 / 500 replicates; and unreported scenarios)
-#   variants  variants of main's scenarios (omitted L_t alone, L_t^2 cells
-#             at gamma0 = -4.5, early events with 500 bootstrap resamples)
-#
-# Each scenario of the manuscript (Table "tab:grid" of the manuscript, in
-# row order) has an id: P1-01 to P1-13
-# (Part 1), P2-01 to P2-06 (Part 2), P3-01 to P3-04 (Part 3). Each id points
-# to the run scenario whose results the manuscript reports; the column
-# `supersedes` of paper_scenarios() records the rows of earlier runs that
-# it replaces. Scenarios reported only in the
-# Supporting Information or used only by the supplementary checks would
-# carry ids E-01, E-02, ...; there are none: the supplementary checks
-# (02d, 02e, 02f, 02g, 02j, 02l, 02m) and every table of the
-# Supporting Information concern the mechanisms of P ids.
-# paper_scenarios() returns the mapping table (written to
-# analysis/scenarios_paper.csv) and paper_scenario(id) the run scenario.
+# sim_scenarios.R --------------------------------------------------------------
+# Scenario grids of the simulation study (plain functions, not part of the
+# package). ccw_scenarios(run) returns the grid of one run of
+# 02_simulation_study.R (main, manycov, largerep, variants);
+# paper_scenarios() maps the manuscript ids P1-01 to P3-04 (Table 2, row
+# order) to the run scenario that supplies each (saved by 02b as
+# analysis/scenarios_paper.csv). Usage:
+#   pkgload::load_all("."); source("analysis/sim_scenarios.R")
 
-# Simulation scenario grid of a run
-#
-# Returns the scenario grid of a run as a list of scenario definitions.
-# Each scenario holds DGM overrides for [ccw_sim_params()], the censoring
-# model formula used in the analysis, truncation, and the expected diagnostic
-# pattern.
-#
-# * `run = "main"` (default): the scenarios of Parts 1-3
-#   (20 scenarios; `f_correct = ~ L + I(L^2) + X + L:X`).
-#   - Part 1 (n = 2000): the correct model plus, for each omitted term
-#     (`omit_L`: analysis model `~ X`; `omit_Lsq`: DGM without the `L X`
-#     term (`beta5 = 0`) and analysis model `~ L + X`, so that exactly
-#     `L^2` is omitted; `omit_lag`: `f_correct` while `L_{t-1}` enters the
-#     DGM), a 2 x 2
-#     factorial of the omitted term's strength in the censoring (treatment)
-#     model (`weak`/`strong`: `beta1` 0.4/1.0, `beta2` 0.3/0.6, `beta6`
-#     0.6/1.2) and in the outcome model (`none`/`strong`: `gamma1` 0/1.5,
-#     `gamma4` 0/1.0, `gamma6` 0/1.2). Names are
-#     `<misspec>_c<w|s>_o<n|s>`. The strong outcome coefficients were chosen
-#     (pilot: 100 replicates at n = 2000, no bootstrap) as the smallest step
-#     giving |bias| >= 2 MC SD in the strong/strong cell (`omit_L`:
-#     `gamma1` 1.0 -> 1.5; `omit_Lsq`: `gamma4 = 1`; `omit_lag`: 1.2 as
-#     is). `gamma0` stays at -4
-#     except where the true g3 horizon risk would leave 0.15-0.40
-#     (`true_risk_ccw()`, `n_mc = 1e5`): `omit_Lsq` strong outcome uses
-#     `gamma0 = -4.5` (g3 risk 0.375). g3 risks: `correct` 0.219,
-#     `omit_L` 0.197 (none) / 0.33 (strong), `omit_Lsq` 0.22 / 0.375,
-#     `omit_lag` 0.22-0.23 / 0.33. The manuscript reports `omit_Lsq_c?_os`
-#     and `omit_lag_*` from this run (P1-07, P1-09, P1-10 to P1-13); the
-#     run `variants` replaces `omit_L_*` and `omit_Lsq_c?_on`, and the run
-#     `largerep` replaces `correct`.
-#   - Part 2 (correct model; null-reference calibration): `correct_n300`,
-#     `correct_n8000` (replaced by the run `largerep`), `near_positivity`
-#     (P2-03), `truncation_95` (P2-04).
-#   - Part 3: `no_tx_cov_effect` (P3-01), `strong_tx_cov_effect` (P3-02),
-#     `extra_ltfu` (P3-03; unweighted informative loss to follow-up).
-#
-#   Scenarios of this run carry `misspec`, `cens_strength`,
-#   `outcome_strength` and `n_boot` (bootstrap resamples).
-#
-# * `run = "manycov"`: an extended calibration check of
-#   the conditional parametric null reference [rrb_null()] (default
-#   within-individual coupling of the redrawn censoring indicators;
-#   6 scenarios, n = 2000 unless stated, `n_boot = 100`). `many_cov` adds
-#   8 extra baseline covariates `X2`-`X9` (`n_extra = 8`, correlation
-#   `rho_extra = 0.5` with `X`, default `beta_extra` / `gamma_extra`) that
-#   are all in the censoring model
-#   `~ L + I(L^2) + X + L:X + X2 + ... + X9`; `many_cov_n300` (P2-05) is the
-#   same at n = 300; `rare_censoring` (`beta0 = -3.5`) leaves few censored
-#   clones in the no-initiation cells; `extreme_weights` (P2-06;
-#   `beta0 = -2`, `beta1 = 2`, `beta2 = 0.5`, `beta3 = 1`) gives very small
-#   ESS. Two detection
-#   scenarios omit `X2` (`beta_extra[1] = 1`, strong in the censoring model)
-#   from the many-covariate model, with `rho_extra = 0.5`
-#   (`many_cov_omit_X2`: `X2` partly captured by the modelled `X`, `X3`-`X9`)
-#   or `rho_extra = 0` (`many_cov_omit_X2_rho0`). `many_cov`,
-#   `rare_censoring` and the two `X2` scenarios are not in the manuscript.
-#   Scenarios of this run carry the fields of run main plus `extra_feats`,
-#   the extra covariates monitored as history functions (`character(0)` when
-#   none; `X2` is monitored even where it is omitted from the model).
-#
-# * `run = "largerep"` (6 scenarios, `f_correct`, every
-#   scenario sets `n`, `n_boot` and the number of simulation replicates
-#   `n_rep`). Large-replicate calibration of the null reference of interval
-#   RRB and censoring balance under the correct model: `correct_1000`
-#   (P1-01; n = 2000, 1000 replicates), `correct_n300_1000` (P2-01; n = 300,
-#   1000 replicates), `correct_n8000_500` (P2-02; n = 8000, 500
-#   replicates). `early_events` (correct
-#   model; `gamma0 = -2`, `gamma2 = -3.5`, `gamma3 = 2.5`; replaced by the
-#   run `variants`): many outcome
-#   events during g1's grace period and a strongly prognostic `X`, so that
-#   the end-of-grace strategy SMD of `X` (g2 vs g1) is clearly non-zero under
-#   correct weights through outcome depletion, while the cumulative RRB of
-#   the baseline features stays near 0 (pilot: 20 replicates per setting,
-#   n = 2000: mean |end-of-grace SMD of X| about 0.25, mean cumulative-RRB
-#   MaxIB of `X`, `L_base` about 0.05, true g3 horizon risk about 0.63).
-#   `omit_L_ss_trunc`
-#   (run main's `omit_L_cs_os`, `beta1 = 1`, `gamma1 = 1.5`, analysis model
-#   `~ X`, weights truncated at the 95th percentile) and `omit_L_ss_nearpos`
-#   (the same with the near-positivity coefficients `beta0 = -2`,
-#   `beta2 = 0.4`, `beta3 = 0.6` of run main's `near_positivity`) are not in
-#   the manuscript. Scenarios of this run carry the fields of run manycov
-#   plus `n_rep`.
-#
-# * `run = "variants"`: variants of run main's scenarios (7 scenarios,
-#   fields of run largerep, 200 replicates). `omit_L1_*` (P1-02 to P1-05)
-#   repeat run main's `omit_L_*` factorial
-#   (`beta1` 0.4 / 1, `gamma1` 0 / 1.5, analysis model `~ X`) with
-#   `beta2 = beta5 = 0`, so that the model `~ X` omits `L_t` alone.
-#   `omit_Lsq_cw_on_g45` (P1-06) and `omit_Lsq_cs_on_g45` (P1-08) repeat run
-#   main's `omit_Lsq_*_on` with `gamma0 = -4.5`, the intercept of the strong
-#   outcome side, so that all four cells of the `L_t^2` factorial share
-#   one intercept. `early_events_b500` (P3-04) repeats run largerep's
-#   `early_events` with `n_boot = 500` for the percentile interval of
-#   cumulative RRB.
-#
-# Argument `run`: `"main"`, `"manycov"`, `"largerep"` or `"variants"`.
-# Value: A named list; each element has `name`, `description`, `params`
-#   (list of overrides), `formula`, `truncate`, `expected`, `run`,
-#   `misspec`, `cens_strength`, `outcome_strength` and `n_boot` (runs
-#   manycov, largerep, variants: also `extra_feats`; runs largerep,
-#   variants: also `n_rep`). Scenarios of the manuscript also carry `id`,
-#   `part` and `label` (see paper_scenarios()).
+# Scenario grid of a run: a named list of scenarios, each with `name`,
+# `description`, `params` (overrides of ccw_sim_params()), `formula`
+# (censoring model), `truncate`, `expected` and run-specific fields
+# (`n_boot`, `extra_feats`, `n_rep`; `id`, `part`, `label` for the
+# scenarios of the manuscript).
 ccw_scenarios <- function(run = c("main", "manycov", "largerep", "variants")) {
   run <- match.arg(run)
   sc <- switch(run,
@@ -393,17 +265,7 @@ ccw_scenarios <- function(run = c("main", "manycov", "largerep", "variants")) {
   stats::setNames(sc, vapply(sc, `[[`, "", "name"))
 }
 
-# Flatten a scenario list to a data frame (e.g. for `scenarios_<run>.csv`)
-#
-# Argument `scenarios`: Output of [ccw_scenarios()].
-# Value: A data frame with one row per scenario. `run` is the run;
-#   `id`, `part` and `label` identify the scenarios of the manuscript (`NA`
-#   for the others, see paper_scenarios()); `n` is the scenario's sample
-#   size; `n_extra` is the number of extra baseline
-#   covariates (0 when absent) and `extra_feats` the comma-separated extra
-#   covariates monitored as history functions (`""` when none); `n_rep` is
-#   the scenario's number of simulation replicates when the scenario sets
-#   it (runs largerep and variants; `NA` otherwise).
+# Flatten a scenario list to a data frame (one row per scenario)
 scenario_table <- function(scenarios = ccw_scenarios()) {
   chr_or_na <- function(x) if (is.null(x)) NA_character_ else x
   flat <- function(p) {
@@ -443,12 +305,9 @@ scenario_table <- function(scenarios = ccw_scenarios()) {
   }))
 }
 
-# Scenarios of the manuscript, in the row order of Table tab:grid of the
-# manuscript: id, part, label (manuscript wording, ASCII),
-# the run and run scenario that supply the reported results, the factor
-# levels of Part 1 (NA elsewhere: taken from the run scenario) and the
-# "<run>:<scenario>" keys of the rows of earlier runs that the run scenario
-# replaces.
+# Manuscript scenarios in Table 2 row order: id, part, label, the run and
+# run scenario that supply the results, Part 1 factor levels and
+# `supersedes` ("<run>:<scenario>" keys of the rows it replaces)
 .paper_map <- function() {
   fac <- c("weak / none", "weak / strong", "strong / none", "strong / strong")
   cells <- c("cw_on", "cw_os", "cs_on", "cs_os")
@@ -495,8 +354,7 @@ scenario_table <- function(scenarios = ccw_scenarios()) {
   rbind(p1, p23)
 }
 
-# Add id / part / label to the scenarios of a run that the manuscript
-# reports
+# Add id / part / label to the manuscript scenarios of a run
 .annotate_paper <- function(sc, run) {
   map <- .paper_map()
   map <- map[map$run == run, ]
@@ -510,20 +368,8 @@ scenario_table <- function(scenarios = ccw_scenarios()) {
   sc
 }
 
-# Scenarios of the manuscript and the runs that supply them
-#
-# Value: A data frame with one row per scenario of the manuscript, in the
-#   row order of Table tab:grid (P1-01 to P1-13, P2-01 to P2-06, P3-01 to
-#   P3-04; E ids would follow, see the header): `id`, `part`, `label`,
-#   `run` and `scenario` (the run scenario whose results the manuscript
-#   reports), `supersedes` ("<run>:<scenario>" keys of the rows of earlier
-#   runs that the run scenario replaces, "" if none), `misspec`,
-#   `cens_strength`, `outcome_strength` (Part 1 factor levels; for the
-#   omitted-L_k cells "omit_L", while the run scenario says "omit_L1") and
-#   the scenario spec needed to rerun it: `description`, `param_overrides`,
-#   `censoring_formula`, `truncate`, `n`, `n_rep` (replicates; the run
-#   default of 200, or 100 at n >= 8000, unless the scenario sets it),
-#   `n_boot`, `n_extra`, `extra_feats` and `expected`.
+# Manuscript scenarios and the runs that supply them: one row per id with
+# the run scenario and the spec needed to rerun it
 paper_scenarios <- function() {
   map <- .paper_map()
   runs <- unique(map$run)

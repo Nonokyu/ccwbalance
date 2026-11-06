@@ -1,33 +1,17 @@
 # 02j_depletion_incidence.R ----------------------------------------------------
-# Outcome incidence during the grace periods, to place the `early_events`
-# scenario (which makes the depletion term of the end-of-grace SMD visible)
-# relative to the base mechanism and to the Webster-Clark SynPUF cohort.
-#
-# Simulation (parameters of P1-01 and P3-04, paper_scenario(); the output
-# column `scenario` keeps the names correct_1000 and early_events):
-#   observed person-period data, n = 200,000: proportion with the outcome by
-#   the end of interval 2 (end of g1's grace period), 8 and 11, overall and
-#   among individuals not yet initiated; proportion with the outcome before
-#   initiation in intervals 0-1 (they leave g1's risk set before the
-#   grace-end interval); risks under the regimes g1-g3 (n = 500,000 each).
-# Empirical: proportion of the SynPUF cohort with the outcome by days 30, 90
-#   and 180 (crude and Kaplan-Meier), overall and among patients not yet
-#   initiated.
-#
-# Inputs:  paper_scenario("P1-01"), paper_scenario("P3-04");
-#          data-raw/webster_clark/Data/baseccwcohort.sas7bdat
-# Outputs: output/sim/sim_depletion_incidence.csv
+# Outcome incidence during the grace periods (cited in the text) for the base
+# mechanism (P1-01) and early_events (P3-04), and for the Webster-Clark
+# SynPUF cohort (crude and Kaplan-Meier).
+# Inputs:  paper_scenario(); data-raw/webster_clark/Data/baseccwcohort.sas7bdat
+# Outputs: output/sim/sim_depletion_incidence.csv,
 #          output/empirical/wc_grace_incidence.csv
-#
-# Run from the project root:  Rscript analysis/02j_depletion_incidence.R
+# Run:     Rscript analysis/02j_depletion_incidence.R
 
 pkgload::load_all(".", quiet = TRUE)
 source(file.path("analysis", "sim_scenarios.R"))
 
 n_obs <- 2e5
 n_regime <- 5e5
-# P3-04 (variants early_events_b500) has the parameters of largerep
-# early_events; only the bootstrap size differs
 ids <- c(correct_1000 = "P1-01", early_events = "P3-04")
 
 sim <- do.call(rbind, lapply(names(ids), function(nm) {

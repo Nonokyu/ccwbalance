@@ -37,7 +37,7 @@ With \code{weighted = TRUE} the means are over clones retained after artificial
 censoring at \code{t}, weighted by \code{w_post}; with \code{weighted = FALSE} they are
 unweighted means over the at-risk rows. For post-baseline covariates
 affected by earlier treatment this is \strong{descriptive only} and is not a
-zero-balance target (see the report).
+zero-balance target.
 }
 \examples{
 d <- simulate_ccw(ccw_sim_params(n = 300), seed = 1)
